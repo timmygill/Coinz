@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Coinz</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="access_token">pk.eyJ1IjoidGltbXlnaWxsIiwiYSI6ImNqbjNndDhhbTM2b3Mzd3F5Mjh5NjdvNDcifQ.aDnMQgQUFxRtG7LM-6s41A</string>
 </resources>
