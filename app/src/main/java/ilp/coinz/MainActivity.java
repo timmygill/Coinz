@@ -1,5 +1,7 @@
 package ilp.coinz;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.PersistableBundle;
@@ -31,7 +33,8 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener {
 
-    private String tag = "MainActivity";
+    private final String tag = "MainActivity";
+
     private MapView mapView;
     private MapboxMap map;
 
@@ -39,6 +42,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
     private Location originLocation;
+
+    private String downloadDate = ""; //YYYY/MM/DD
+    private final String preferencesFile = "MyPrefsFile";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -154,6 +160,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onStart() {
         super.onStart();
         mapView.onStart();
+
+        //Restore preferences
+        SharedPreferences settings = getSharedPreferences(preferencesFile, Context.MODE_PRIVATE);
+        downloadDate = settings.getString("lastDownloadData", "");
+        Log.d(tag, "[onStart] Recalled lastDownloadDate is '" + downloadDate + "'");
+
     }
 
     @Override
