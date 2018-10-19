@@ -30,6 +30,9 @@ import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener {
@@ -45,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Location originLocation;
 
     private String downloadDate = ""; //YYYY/MM/DD
+    private String coindata = "";
     private final String preferencesFile = "MyPrefsFile";
 
     @Override
@@ -74,6 +78,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             //Make location information available
             enableLocation();
+
         }
     }
 
@@ -143,6 +148,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onConnected(){
         Log.d(tag, "[onConnected] requesting location updates");
         locationEngine.requestLocationUpdates();
+        Log.d(tag, "[onConnected] location updates granted");
     }
 
     @Override
@@ -167,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         //Restore preferences
         SharedPreferences settings = getSharedPreferences(preferencesFile, Context.MODE_PRIVATE);
-        downloadDate = settings.getString("lastDownloadData", "");
+        downloadDate = settings.getString("lastDownloadDate", "");
         Log.d(tag, "[onStart] Recalled lastDownloadDate is '" + downloadDate + "'");
 
         //TODO: login dialogue, change def val to false
@@ -176,6 +182,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if(!userLoggedIn){
             Intent intent = new Intent(this, LoginActivity.class);
             startActivity(intent);
+        }
+
+        //Download todays coin map and update preferences
+        DateFormat df = new SimpleDateFormat("yyyy/MM/dd");
+        String todaysDate = df.format(Calendar.getInstance().getTime());
+
+
+        //if (!(todaysDate.equals(downloadDate))) {
+         if (true){
+            downloadDate = todaysDate;
+
+            String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + downloadDate + "/coinzmap.geojson";
+            new DownloadFileTask().execute(downloadString);
+
+             coindata = DownloadCompleteRunner.result;
+             Log.d(tag, "result: " + coindata);
+
+
+            SharedPreferences.Editor editor = settings.edit();
+            editor.putString("lastDownloadDate", downloadDate);
+            editor.commit();
         }
 
     }
