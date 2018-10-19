@@ -37,13 +37,13 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
     @NonNull
     private String readStream(InputStream stream) throws IOException{
         //https://stackoverflow.com/questions/8376072/whats-the-readstream-method-i-just-can-not-find-it-anywhere
-        StringBuilder sb = new StringBuilder();
-        BufferedReader r = new BufferedReader(new InputStreamReader(stream));
-        for (String line = r.readLine(); line != null; line =r.readLine()){
-            sb.append(line);
-        }
+        java.util.Scanner s = new java.util.Scanner(stream).useDelimiter("\\A");
         stream.close();
-        return sb.toString();
+
+        String result = s.hasNext() ? s.next() : "";
+        System.out.print(result);
+        return result;
+
     }
 
     @Override

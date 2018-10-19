@@ -1,6 +1,7 @@
 package ilp.coinz;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
 import android.os.Bundle;
@@ -49,6 +50,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
+
         Mapbox.getInstance(this, getString(R.string.access_token));
         setContentView(R.layout.activity_main);
 
@@ -165,6 +169,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         SharedPreferences settings = getSharedPreferences(preferencesFile, Context.MODE_PRIVATE);
         downloadDate = settings.getString("lastDownloadData", "");
         Log.d(tag, "[onStart] Recalled lastDownloadDate is '" + downloadDate + "'");
+
+        //TODO: login dialogue, change def val to false
+        boolean userLoggedIn = settings.getBoolean("isUserLoggedIn", true);
+
+        if(!userLoggedIn){
+            Intent intent = new Intent(this, LoginActivity.class);
+            startActivity(intent);
+        }
 
     }
 
