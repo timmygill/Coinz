@@ -14,6 +14,9 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineListener;
 import com.mapbox.android.core.location.LocationEnginePriority;
@@ -31,10 +34,15 @@ import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -53,6 +61,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private String downloadDate = ""; //YYYY/MM/DD
     private String coindata = "";
     private final String preferencesFile = "MyPrefsFile";
+
+    private ArrayList<Coin> coinsArray = new ArrayList<Coin>();
+    private ExchangeRates exchangeRates;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -221,6 +232,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void downloadFinish(String result){
         coindata = result;
         //Log.d(tag, "result: " + coindata);
+        try {
+            JSONObject coindatajson = new JSONObject(coindata);
+            exchangeRates = new ExchangeRates(coindatajson.getJSONObject("rates"));
+
+            JSONArray coinsjson = coindatajson.getJSONArray("features");
+            for (int i = 0; i < coinsjson.length(); i++) {
+                   coinsArray.add(new Coin(coinsjson.getJSONObject(i)));
+            }
+        } catch (JSONException e){
+            Log.d(tag, e.toString());
+        }
     }
 
     @Override
