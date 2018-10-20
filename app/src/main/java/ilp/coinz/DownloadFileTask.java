@@ -13,6 +13,8 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
 
     private final String tag = "DownloadFileTask";
 
+    public DownloadFileResponse delegate = null;
+
     @Override
     protected String doInBackground(String... urls){
         try{
@@ -48,14 +50,19 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
             String result =  s.hasNext() ? s.next() : "";
 
             stream.close();
-            Log.d(tag, "result: " + result);
+            //Log.d(tag, "result: " + result);
             return result;
     }
 
+
+
     @Override
     protected void onPostExecute(String result){
-        //Log.d(tag, "Trying to return " + result);
         super.onPostExecute(result);
-        DownloadCompleteRunner.downloadComplete(result);
+        try {
+            delegate.downloadFinish(result);
+        } catch (NullPointerException e){
+            Log.d(tag, "Fatal error, coin data not found");
+        }
     }
 }

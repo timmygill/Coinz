@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.design.widget.FloatingActionButton;
@@ -30,12 +31,14 @@ import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
 
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener, DownloadFileResponse {
 
     private final String tag = "MainActivity";
 
@@ -176,6 +179,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         downloadDate = settings.getString("lastDownloadDate", "");
         Log.d(tag, "[onStart] Recalled lastDownloadDate is '" + downloadDate + "'");
 
+        downloadTodaysMap(settings);
+
         //TODO: login dialogue, change def val to false
         boolean userLoggedIn = settings.getBoolean("isUserLoggedIn", true);
 
@@ -184,27 +189,38 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             startActivity(intent);
         }
 
-        //Download todays coin map and update preferences
+
+
+    }
+
+    //Download todays coin map and update preferences
+    private void downloadTodaysMap(SharedPreferences settings){
+
         DateFormat df = new SimpleDateFormat("yyyy/MM/dd");
         String todaysDate = df.format(Calendar.getInstance().getTime());
 
-
+        //TODO: change after testing
         //if (!(todaysDate.equals(downloadDate))) {
-         if (true){
+        if (true){
             downloadDate = todaysDate;
 
             String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + downloadDate + "/coinzmap.geojson";
-            new DownloadFileTask().execute(downloadString);
-
-             coindata = DownloadCompleteRunner.result;
-             Log.d(tag, "result: " + coindata);
+            DownloadFileTask downloadMapTask = new DownloadFileTask();
+            downloadMapTask.delegate = this;
+            downloadMapTask.execute(downloadString);
 
 
             SharedPreferences.Editor editor = settings.edit();
             editor.putString("lastDownloadDate", downloadDate);
             editor.commit();
         }
+    }
 
+
+    @Override
+    public void downloadFinish(String result){
+        coindata = result;
+        //Log.d(tag, "result: " + coindata);
     }
 
     @Override
@@ -223,6 +239,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onStop() {
         super.onStop();
         mapView.onStop();
+        Log.d(tag, "Stopping and saving coin data");
+        try {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(this.openFileOutput("coinzdata.geojson", Context.MODE_PRIVATE));
+            outputStreamWriter.write(coindata);
+            outputStreamWriter.close();
+        }
+        catch (IOException e) {
+            Log.e("Exception", "File write failed: " + e.toString());
+        }
     }
 
     @Override
