@@ -63,6 +63,7 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
             delegate.downloadFinish(result);
         } catch (NullPointerException e){
             Log.d(tag, "Fatal error, coin data not found");
+            Log.d(tag, e.toString());
         }
     }
 }

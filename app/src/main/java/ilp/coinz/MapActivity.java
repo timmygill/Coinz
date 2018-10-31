@@ -63,7 +63,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private String coindata = "";
     private final String preferencesFile = "MyPrefsFile";
 
-    private ArrayList<Coin> coinsArray = new ArrayList<Coin>();
+    private ArrayList<Coin> coinsArray = new ArrayList<>();
     private ExchangeRates exchangeRates;
 
     @Override
@@ -86,12 +86,18 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             Log.d(tag, "[onMapReady] mapboxMap is null");
         } else {
             map = mapboxMap;
+
             //Set user interface options
             map.getUiSettings().setCompassEnabled(true);
-            map.getUiSettings().setZoomControlsEnabled(true);
+            map.getUiSettings().setZoomGesturesEnabled(true);
+            map.getUiSettings().setZoomControlsEnabled(false);
+            map.getUiSettings().setRotateGesturesEnabled(false);
+            map.getUiSettings().setTiltGesturesEnabled(false);
 
             //Make location information available
             enableLocation();
+
+            downloadTodaysMap();
 
         }
     }
@@ -185,27 +191,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         super.onStart();
         mapView.onStart();
 
+    }
+
+    //Download todays coin map and update preferences
+    private void downloadTodaysMap(){
         //Restore preferences
         SharedPreferences settings = getSharedPreferences(preferencesFile, Context.MODE_PRIVATE);
         downloadDate = settings.getString("lastDownloadDate", "");
         Log.d(tag, "[onStart] Recalled lastDownloadDate is '" + downloadDate + "'");
-
-        downloadTodaysMap(settings);
-
-        //TODO: login dialogue, change def val to false
-        boolean userLoggedIn = settings.getBoolean("isUserLoggedIn", true);
-
-        if(!userLoggedIn){
-            Intent intent = new Intent(this, LoginActivity.class);
-            startActivity(intent);
-        }
-
-
-
-    }
-
-    //Download todays coin map and update preferences
-    private void downloadTodaysMap(SharedPreferences settings){
 
         DateFormat df = new SimpleDateFormat("yyyy/MM/dd");
         String todaysDate = df.format(Calendar.getInstance().getTime());
@@ -224,13 +217,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             SharedPreferences.Editor editor = settings.edit();
             editor.putString("lastDownloadDate", downloadDate);
             editor.commit();
+        }else{
+            //TODO: read from file
         }
     }
 
 
     @Override
     public void downloadFinish(String result){
+
         coinsArray = parseJson(result);
+
     }
 
     public ArrayList<Coin> parseJson(String jsondata){
@@ -241,13 +238,28 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             JSONArray coinsjson = coindatajson.getJSONArray("features");
             for (int i = 0; i < coinsjson.length(); i++) {
                 coinsArray.add(new Coin(coinsjson.getJSONObject(i)));
-                Log.d(tag, coinsArray.get(i).getId());
+                Log.d(tag, coinsArray.get(i).getId() + "\n" + coinsArray.get(i).getValue().toString());
             }
 
         } catch (JSONException e){
             Log.d(tag, e.toString());
         }
+        addCoinsToMap(coinsArray);
         return coinsArray;
+    }
+
+    public void addCoinsToMap(ArrayList<Coin> coinsArray){
+        for (Coin coin : coinsArray){
+            LatLng pos = new LatLng(coin.getLatitude(), coin.getLongitude());
+            String snip = "VALUE: " + coin.getValue().toString();
+            String tit = coin.getCurrency().toString();
+            MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip);
+            try{
+                map.addMarker(mo);
+            } catch (NullPointerException e){
+                map.addMarker(mo);
+            }
+        }
     }
 
     @Override

@@ -26,7 +26,7 @@ public class Coin {
             this.currency = Currency.valueOf(tempprops.getString("currency"));
             this.symbol = tempprops.getString("marker-symbol");
             JSONObject tempgeometry = coinjson.getJSONObject("geometry");
-            JSONArray coords = coinjson.getJSONArray("coordinates");
+            JSONArray coords = tempgeometry.getJSONArray("coordinates");
             this.longitude = Double.valueOf(coords.getString(0));
             this.latitude = Double.valueOf(coords.getString(1));
         } catch (JSONException e){
@@ -34,10 +34,6 @@ public class Coin {
         }
     }
 
-    public void addCoinToMap(MapboxMap map){
-        map.addMarker(new MarkerOptions()
-        .position(new LatLng(latitude, longitude)));
-    }
 
     public String getId() {
         return id;
