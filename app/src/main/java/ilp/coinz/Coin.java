@@ -1,5 +1,7 @@
 package ilp.coinz;
 
+import com.mapbox.mapboxsdk.annotations.BaseMarkerOptions;
+import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
@@ -17,6 +19,8 @@ public class Coin {
     private String symbol;
     private Double longitude;
     private Double latitude;
+    private boolean collected;
+    private Marker marker;
 
     public Coin(JSONObject coinjson){
         try {
@@ -29,6 +33,7 @@ public class Coin {
             JSONArray coords = tempgeometry.getJSONArray("coordinates");
             this.longitude = Double.valueOf(coords.getString(0));
             this.latitude = Double.valueOf(coords.getString(1));
+            this.collected = false;
         } catch (JSONException e){
             return;
         }
@@ -58,4 +63,17 @@ public class Coin {
     public Double getLatitude() {
         return latitude;
     }
+
+    public void markAsCollected(){
+        this.collected = true;
+    }
+
+    public void setMarker(Marker marker){
+        this.marker = marker;
+    }
+
+    public Marker getMarker(){
+        return marker;
+    }
+
 }

@@ -66,6 +66,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private ArrayList<Coin> coinsArray = new ArrayList<>();
     private ExchangeRates exchangeRates;
 
+    private float collectionRadius = 25;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -160,6 +162,18 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             Log.d(tag, "[onLocationChanged] location is not null");
             originLocation = location;
             setCameraPosition(location);
+
+            for (Coin c : coinsArray){
+                float[] distance = new float[2];
+                Location.distanceBetween(location.getLatitude(),location.getLongitude(),c.getLatitude(),c.getLongitude(),distance);
+
+                if (distance[0] <= collectionRadius)
+                {
+                    c.markAsCollected();
+                    Log.d(tag, "Collected coin" + c.getId());
+                    map.removeMarker(c.getMarker());
+                }
+            }
         }
     }
 
@@ -255,9 +269,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             String tit = coin.getCurrency().toString();
             MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip);
             try{
-                map.addMarker(mo);
+               coin.setMarker(map.addMarker(mo));
             } catch (NullPointerException e){
-                map.addMarker(mo);
+                Log.d(tag, e.toString());
             }
         }
     }
