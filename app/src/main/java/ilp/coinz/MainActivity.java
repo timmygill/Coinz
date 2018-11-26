@@ -22,9 +22,9 @@ private FirebaseAuth mAuth;
     public void onStart(){
         super.onStart();
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        //if(currentUser == null){
+        if(currentUser == null){
         //TODO:change after testing
-        if(1==0){
+        //if(1==0){
             startActivity(new Intent(this, LoginActivity.class));
 
         } else {

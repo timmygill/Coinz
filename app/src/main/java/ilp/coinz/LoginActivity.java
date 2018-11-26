@@ -20,6 +20,7 @@ import android.view.View;
         import com.google.firebase.auth.AuthResult;
         import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -131,6 +132,15 @@ public class LoginActivity extends AppCompatActivity {
                                     Toast.makeText(LoginActivity.this, "Authentication failed." + task.getException(),
                                             Toast.LENGTH_SHORT).show();
                                 } else {
+
+                                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                                    User user = new User(email);
+                                    GoldBalance gb = new GoldBalance();
+
+                                    db.collection("user").document(email).collection("Bank").add(gb);
+
+
                                     startActivity(new Intent(LoginActivity.this, MapActivity.class));
                                     finish();
                                 }

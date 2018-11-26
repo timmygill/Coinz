@@ -20,7 +20,6 @@ public class Coin {
     private Double longitude;
     private Double latitude;
     private boolean collected;
-    private Marker marker;
 
     public Coin(JSONObject coinjson){
         try {
@@ -64,16 +63,14 @@ public class Coin {
         return latitude;
     }
 
-    public void markAsCollected(){
-        this.collected = true;
+    public boolean isCollected() {
+        return collected;
     }
 
-    public void setMarker(Marker marker){
-        this.marker = marker;
+    public void setCollected(boolean collected){
+        this.collected = collected;
     }
 
-    public Marker getMarker(){
-        return marker;
-    }
+
 
 }

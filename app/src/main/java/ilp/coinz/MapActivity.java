@@ -14,6 +14,8 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -24,6 +26,7 @@ import com.mapbox.android.core.location.LocationEngineProvider;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdate;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -45,7 +48,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener, DownloadFileResponse {
 
@@ -64,6 +69,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private final String preferencesFile = "MyPrefsFile";
 
     private ArrayList<Coin> coinsArray = new ArrayList<>();
+    private HashMap<String, Marker> markers = new HashMap<>();
     private ExchangeRates exchangeRates;
 
     private float collectionRadius = 25;
@@ -167,11 +173,16 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 float[] distance = new float[2];
                 Location.distanceBetween(location.getLatitude(),location.getLongitude(),c.getLatitude(),c.getLongitude(),distance);
 
-                if (distance[0] <= collectionRadius)
+                if (distance[0] <= collectionRadius && !(c.isCollected()))
                 {
-                    c.markAsCollected();
+                    c.setCollected(true);
                     Log.d(tag, "Collected coin" + c.getId());
-                    map.removeMarker(c.getMarker());
+                    map.removeMarker(markers.get(c.getId()));
+
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                    db.collection("user").document(email).collection("Wallet").add(c);
+
                 }
             }
         }
@@ -269,7 +280,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             String tit = coin.getCurrency().toString();
             MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip);
             try{
-               coin.setMarker(map.addMarker(mo));
+               markers.put(coin.getId(), map.addMarker(mo));
             } catch (NullPointerException e){
                 Log.d(tag, e.toString());
             }
