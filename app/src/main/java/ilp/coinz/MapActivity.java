@@ -55,6 +55,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -72,14 +73,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private Location originLocation;
 
     private String downloadDate = ""; //YYYY/MM/DD
-    private String coindata = "";
     private final String preferencesFile = "MyPrefsFile";
 
-    private ArrayList<Coin> coinsArray = new ArrayList<>();
+    private HashMap<String, Coin> coinsCollection = new HashMap<>();
     private HashMap<String, Marker> markers = new HashMap<>();
+    private ArrayList<String> collectedIDs = new ArrayList<>();
     private ExchangeRates exchangeRates;
+    private String jsonResult;
 
-    private float collectionRadius = 25;
+    private boolean coinsReady = false;
+
+    private float collectionRadius = 250;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -176,11 +180,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             originLocation = location;
             setCameraPosition(location);
 
-            for (Coin c : coinsArray){
+            for (Coin c : coinsCollection.values()){
                 float[] distance = new float[2];
                 Location.distanceBetween(location.getLatitude(),location.getLongitude(),c.getLatitude(),c.getLongitude(),distance);
 
-                if (distance[0] <= collectionRadius && !(c.isCollected()))
+                if (distance[0] <= collectionRadius && !(c.isCollected()) && coinsReady)
                 {
                     c.setCollected(true);
                     Log.d(tag, "Collected coin" + c.getId());
@@ -235,65 +239,69 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         DateFormat df = new SimpleDateFormat("yyyy/MM/dd");
         String todaysDate = df.format(Calendar.getInstance().getTime());
 
-        //TODO: change after testing
-        //if (!(todaysDate.equals(downloadDate))) {
-        if (true){
-            downloadDate = todaysDate;
+
+        if (!(todaysDate.equals(downloadDate))) {
 
             clearFBWallet();
 
-            String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + downloadDate + "/coinzmap.geojson";
-            DownloadFileTask downloadMapTask = new DownloadFileTask();
-            downloadMapTask.delegate = this;
-            downloadMapTask.execute(downloadString);
-
-
+            downloadDate = todaysDate;
             SharedPreferences.Editor editor = settings.edit();
             editor.putString("lastDownloadDate", downloadDate);
             editor.commit();
-        }else{
-            //TODO: read from file
         }
+
+        String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + downloadDate + "/coinzmap.geojson";
+        DownloadFileTask downloadMapTask = new DownloadFileTask();
+        downloadMapTask.delegate = this;
+        downloadMapTask.execute(downloadString);
     }
 
 
     @Override
     public void downloadFinish(String result){
 
-        coinsArray = parseJson(result);
+        jsonResult = result;
+        downloadFBWallet();
+
+
 
     }
 
-    public ArrayList<Coin> parseJson(String jsondata){
+    public void parseJson(){
         try {
-            JSONObject coindatajson = new JSONObject(jsondata);
+            JSONObject coindatajson = new JSONObject(jsonResult);
             exchangeRates = new ExchangeRates(coindatajson.getJSONObject("rates"));
 
             JSONArray coinsjson = coindatajson.getJSONArray("features");
             for (int i = 0; i < coinsjson.length(); i++) {
-                coinsArray.add(new Coin(coinsjson.getJSONObject(i)));
-                Log.d(tag, coinsArray.get(i).getId() + "\n" + coinsArray.get(i).getValue().toString());
+                Coin tempCoin = new Coin(coinsjson.getJSONObject(i));
+                coinsCollection.put(tempCoin.getId(), tempCoin);
+            }
+            for (String id : collectedIDs){
+                coinsCollection.get(id).setCollected(true);
             }
 
         } catch (JSONException e){
             Log.d(tag, e.toString());
         }
-        addCoinsToMap(coinsArray);
-        return coinsArray;
+        addCoinsToMap();
     }
 
-    public void addCoinsToMap(ArrayList<Coin> coinsArray){
-        for (Coin coin : coinsArray){
-            LatLng pos = new LatLng(coin.getLatitude(), coin.getLongitude());
-            String snip = "VALUE: " + coin.getValue().toString();
-            String tit = coin.getCurrency().toString();
-            MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip);
-            try{
-               markers.put(coin.getId(), map.addMarker(mo));
-            } catch (NullPointerException e){
-                Log.d(tag, e.toString());
+    public void addCoinsToMap() {
+        for (Coin coin : coinsCollection.values()) {
+            if (!(collectedIDs.contains(coin.getId()))){
+                LatLng pos = new LatLng(coin.getLatitude(), coin.getLongitude());
+                String snip = "VALUE: " + coin.getValue().toString();
+                String tit = coin.getCurrency().toString();
+                MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip);
+                try {
+                    markers.put(coin.getId(), map.addMarker(mo));
+                } catch (NullPointerException e) {
+                    Log.d(tag, e.toString());
+                }
             }
         }
+        coinsReady = true;
     }
 
     public void clearFBWallet(){
@@ -316,6 +324,29 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         }
 
+        public void downloadFBWallet(){
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+            String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+            db.collection("/user/" + email + "/Wallet")
+                    .get()
+                    .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                            if (task.isSuccessful()) {
+                                for (QueryDocumentSnapshot doc : task.getResult()) {
+                                    collectedIDs.add(doc.get("id").toString());
+                                }
+
+                            } else {
+                                Log.d(tag, "Error getting documents: ", task.getException());
+                            }
+                            parseJson();
+                        }
+                    });
+
+        }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -335,7 +366,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         Log.d(tag, "Stopping and saving coin data");
         try {
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(this.openFileOutput("coinzdata.geojson", Context.MODE_PRIVATE));
-            outputStreamWriter.write(coindata);
+            outputStreamWriter.write(jsonResult);
             outputStreamWriter.close();
         }
         catch (IOException e) {
