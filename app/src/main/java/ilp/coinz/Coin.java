@@ -20,6 +20,7 @@ public class Coin {
     private Double longitude;
     private Double latitude;
     private boolean collected;
+    private boolean banked;
 
     public Coin(JSONObject coinjson){
         try {
@@ -33,6 +34,7 @@ public class Coin {
             this.longitude = Double.valueOf(coords.getString(0));
             this.latitude = Double.valueOf(coords.getString(1));
             this.collected = false;
+            this.banked = false;
         } catch (JSONException e){
             return;
         }
@@ -71,6 +73,7 @@ public class Coin {
         this.collected = collected;
     }
 
-
-
+    public void setBanked(boolean banked) {
+        this.banked = banked;
+    }
 }

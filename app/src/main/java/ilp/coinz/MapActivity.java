@@ -7,6 +7,7 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PersistableBundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -14,8 +15,14 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.model.Document;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -233,6 +240,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         if (true){
             downloadDate = todaysDate;
 
+            clearFBWallet();
+
             String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + downloadDate + "/coinzmap.geojson";
             DownloadFileTask downloadMapTask = new DownloadFileTask();
             downloadMapTask.delegate = this;
@@ -286,6 +295,26 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             }
         }
     }
+
+    public void clearFBWallet(){
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+        db.collection("/user/" + email + "/Wallet")
+        .get()
+        .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+            @Override
+            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                if(task.isSuccessful()){
+                    for(QueryDocumentSnapshot doc : task.getResult()){
+                        doc.getReference().delete();
+                    }
+                } else {
+                    Log.d(tag, "Error getting documents: ", task.getException());
+                }
+            }
+        });
+
+        }
 
     @Override
     protected void onResume() {
