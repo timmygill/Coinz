@@ -8,12 +8,21 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
+import android.support.design.internal.BottomNavigationItemView;
+import android.support.design.internal.BottomNavigationMenu;
+import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -58,6 +67,7 @@ import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback, LocationEngineListener, PermissionsListener, DownloadFileResponse {
@@ -72,6 +82,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     private LocationLayerPlugin locationLayerPlugin;
     private Location originLocation;
 
+    private String todaysDate = ""; //YYYY/MM/DD
     private String downloadDate = ""; //YYYY/MM/DD
     private final String preferencesFile = "MyPrefsFile";
 
@@ -83,20 +94,65 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     private boolean coinsReady = false;
 
-    private float collectionRadius = 250;
+    private float collectionRadius = 25;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        todaysDate = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
 
         Mapbox.getInstance(this, getString(R.string.access_token));
         setContentView(R.layout.activity_map);
 
         mapView = findViewById(R.id.mapboxMapView);
 
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.bottomNavigationView);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
+        loadFragment(new MapFragment());
+
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
+    }
+
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            Fragment fragment;
+            switch (item.getItemId()) {
+                case R.id.navigation_map:
+                   Log.d(tag, "map");
+                    return true;
+                case R.id.navigation_bank:
+                    fragment = new BankFragment();
+                    loadFragment(fragment);
+                    Log.d(tag, "bank");
+                    return true;
+                case R.id.navigation_shop:
+                    fragment = new ShopFragment();
+                    loadFragment(fragment);
+                    Log.d(tag, "shop");
+                    return true;
+                case R.id.navigation_profile:
+                    fragment = new ProfileFragment();
+                    loadFragment(fragment);
+                    Log.d(tag, "profile");
+                    return true;
+            }
+            return false;
+        }
+    };
+
+    private void loadFragment(Fragment fragment) {
+        // load fragment
+        Log.d(tag, "loading fragment " + fragment.getTag());
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, fragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
 
     @Override
@@ -188,7 +244,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 {
                     c.setCollected(true);
                     Log.d(tag, "Collected coin" + c.getId());
-                    map.removeMarker(markers.get(c.getId()));
+
+                    if (markers.containsKey(c.getId())) { map.removeMarker(markers.get(c.getId())); }
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
@@ -231,38 +288,38 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     //Download todays coin map and update preferences
     private void downloadTodaysMap(){
+
         //Restore preferences
         SharedPreferences settings = getSharedPreferences(preferencesFile, Context.MODE_PRIVATE);
         downloadDate = settings.getString("lastDownloadDate", "");
         Log.d(tag, "[onStart] Recalled lastDownloadDate is '" + downloadDate + "'");
 
-        DateFormat df = new SimpleDateFormat("yyyy/MM/dd");
-        String todaysDate = df.format(Calendar.getInstance().getTime());
-
-
+        //On new map, delete old coins from Firebase and update most recent map date.
         if (!(todaysDate.equals(downloadDate))) {
-
             clearFBWallet();
 
             downloadDate = todaysDate;
+
             SharedPreferences.Editor editor = settings.edit();
             editor.putString("lastDownloadDate", downloadDate);
             editor.commit();
+        } else {
+            downloadMap(todaysDate);
         }
+    }
 
-        String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + downloadDate + "/coinzmap.geojson";
+    public void downloadMap(String date){
+        String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + date + "/coinzmap.geojson";
         DownloadFileTask downloadMapTask = new DownloadFileTask();
         downloadMapTask.delegate = this;
         downloadMapTask.execute(downloadString);
     }
-
 
     @Override
     public void downloadFinish(String result){
 
         jsonResult = result;
         downloadFBWallet();
-
 
 
     }
@@ -278,7 +335,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                 coinsCollection.put(tempCoin.getId(), tempCoin);
             }
             for (String id : collectedIDs){
-                coinsCollection.get(id).setCollected(true);
+                if(coinsCollection.containsKey(id)){ coinsCollection.get(id).setCollected(true); }
             }
 
         } catch (JSONException e){
@@ -316,6 +373,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                     for(QueryDocumentSnapshot doc : task.getResult()){
                         doc.getReference().delete();
                     }
+                    downloadMap(todaysDate);
                 } else {
                     Log.d(tag, "Error getting documents: ", task.getException());
                 }
@@ -337,11 +395,11 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
                                 for (QueryDocumentSnapshot doc : task.getResult()) {
                                     collectedIDs.add(doc.get("id").toString());
                                 }
-
+                                parseJson();
                             } else {
                                 Log.d(tag, "Error getting documents: ", task.getException());
                             }
-                            parseJson();
+
                         }
                     });
 
