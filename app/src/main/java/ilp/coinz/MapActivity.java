@@ -108,51 +108,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         mapView = findViewById(R.id.mapboxMapView);
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.bottomNavigationView);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
-        loadFragment(new MapFragment());
 
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
-    }
-
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
-
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            Fragment fragment;
-            switch (item.getItemId()) {
-                case R.id.navigation_map:
-                   Log.d(tag, "map");
-                    return true;
-                case R.id.navigation_bank:
-                    fragment = new BankFragment();
-                    loadFragment(fragment);
-                    Log.d(tag, "bank");
-                    return true;
-                case R.id.navigation_shop:
-                    fragment = new ShopFragment();
-                    loadFragment(fragment);
-                    Log.d(tag, "shop");
-                    return true;
-                case R.id.navigation_profile:
-                    fragment = new ProfileFragment();
-                    loadFragment(fragment);
-                    Log.d(tag, "profile");
-                    return true;
-            }
-            return false;
-        }
-    };
-
-    private void loadFragment(Fragment fragment) {
-        // load fragment
-        Log.d(tag, "loading fragment " + fragment.getTag());
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.fragment_container, fragment);
-        transaction.addToBackStack(null);
-        transaction.commit();
     }
 
     @Override
