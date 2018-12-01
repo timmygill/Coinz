@@ -1,6 +1,7 @@
 package ilp.coinz;
 
 
+import android.arch.lifecycle.Lifecycle;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.location.Location;
@@ -58,6 +59,8 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
     final private String tag = "MapFragment";
 
+    public MainActivity activity;
+
     private MapView mapView;
     private MapboxMap map;
     private final List<OnMapReadyCallback> mapReadyCallbackList = new ArrayList<>();
@@ -67,17 +70,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     private LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
 
-    private String todaysDate = ""; //YYYY/MM/DD
-    private String downloadDate = ""; //YYYY/MM/DD
-    private final String preferencesFile = "MyPrefsFile";
 
-    private HashMap<String, Coin> coinsCollection = new HashMap<>();
-    private HashMap<String, Marker> markers = new HashMap<>();
-    private ArrayList<String> collectedIDs = new ArrayList<>();
-    private ExchangeRates exchangeRates;
-    private String jsonResult;
-
-    private boolean coinsReady = false;
 
     private float collectionRadius = 25;
 
@@ -111,7 +104,10 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
-        todaysDate = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
+
+        activity = (MainActivity) getActivity();
+
+       activity.todaysDate = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
 
         Mapbox.getInstance(getActivity(), getString(R.string.access_token));
 
@@ -155,8 +151,16 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         map.getUiSettings().setRotateGesturesEnabled(false);
         map.getUiSettings().setTiltGesturesEnabled(false);
 
-        downloadTodaysMap();
+        activity.downloadTodaysMap();
         enableLocation();
+    }
+
+    @Override
+    public void downloadFinish(String result){
+
+        activity.jsonResult = result;
+        activity.downloadFBWallet();
+
     }
 
 
@@ -201,6 +205,8 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
                 locationLayerPlugin.setLocationLayerEnabled(true);
                 locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
                 locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
+                Lifecycle lifecycle = getLifecycle();
+                lifecycle.addObserver(locationLayerPlugin);
             }
         }
     }
@@ -218,16 +224,16 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
             Log.d(tag, "[onLocationChanged] location is not null");
             setCameraPosition(location);
 
-            for (Coin c : coinsCollection.values()){
+            for (Coin c : activity.coinsCollection.values()){
                 float[] distance = new float[2];
                 Location.distanceBetween(location.getLatitude(),location.getLongitude(),c.getLatitude(),c.getLongitude(),distance);
 
-                if (distance[0] <= collectionRadius && !(c.isCollected()) && coinsReady)
+                if (distance[0] <= collectionRadius && !(c.isCollected()) && activity.coinsReady)
                 {
                     c.setCollected(true);
                     Log.d(tag, "Collected coin" + c.getId());
 
-                    if (markers.containsKey(c.getId())) { map.removeMarker(markers.get(c.getId())); }
+                    if (activity.markers.containsKey(c.getId())) { map.removeMarker(activity.markers.get(c.getId())); }
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
@@ -262,130 +268,34 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         }
     }
 
-    //Download todays coin map and update preferences
-    private void downloadTodaysMap(){
-
-        //Restore preferences
-        SharedPreferences settings = this.getActivity().getSharedPreferences(preferencesFile, Context.MODE_PRIVATE);
-        downloadDate = settings.getString("lastDownloadDate", "");
-        Log.d(tag, "[onStart] Recalled lastDownloadDate is '" + downloadDate + "'");
-
-        //On new map, delete old coins from Firebase and update most recent map date.
-        if (!(todaysDate.equals(downloadDate))) {
-            clearFBWallet();
-
-            downloadDate = todaysDate;
-
-            SharedPreferences.Editor editor = settings.edit();
-            editor.putString("lastDownloadDate", downloadDate);
-            editor.commit();
-        } else {
-            downloadMap(todaysDate);
-        }
-    }
-
-    public void downloadMap(String date){
-        String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + date + "/coinzmap.geojson";
-        DownloadFileTask downloadMapTask = new DownloadFileTask();
-        downloadMapTask.delegate = this;
-        downloadMapTask.execute(downloadString);
-    }
-
-    @Override
-    public void downloadFinish(String result){
-
-        jsonResult = result;
-        downloadFBWallet();
-
-
-    }
-    public void parseJson(){
-        try {
-            JSONObject coindatajson = new JSONObject(jsonResult);
-            exchangeRates = new ExchangeRates(coindatajson.getJSONObject("rates"));
-
-            JSONArray coinsjson = coindatajson.getJSONArray("features");
-            for (int i = 0; i < coinsjson.length(); i++) {
-                Coin tempCoin = new Coin(coinsjson.getJSONObject(i));
-                coinsCollection.put(tempCoin.getId(), tempCoin);
-            }
-            for (String id : collectedIDs){
-                if(coinsCollection.containsKey(id)){ coinsCollection.get(id).setCollected(true); }
-            }
-
-        } catch (JSONException e){
-            Log.d(tag, e.toString());
-        }
-        addCoinsToMap();
-    }
-
     public void addCoinsToMap() {
-        for (Coin coin : coinsCollection.values()) {
-            if (!(collectedIDs.contains(coin.getId()))){
+        for (Coin coin : activity.coinsCollection.values()) {
+            if (!(activity.collectedIDs.contains(coin.getId()))){
                 LatLng pos = new LatLng(coin.getLatitude(), coin.getLongitude());
                 String snip = "VALUE: " + coin.getValue().toString();
                 String tit = coin.getCurrency().toString();
                 MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip);
                 try {
-                    markers.put(coin.getId(), map.addMarker(mo));
+                    activity.markers.put(coin.getId(), map.addMarker(mo));
                 } catch (NullPointerException e) {
                     Log.d(tag, e.toString());
                 }
             }
         }
-        coinsReady = true;
+        activity.coinsReady = true;
     }
-
-    public void clearFBWallet(){
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-        db.collection("/user/" + email + "/Wallet")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if(task.isSuccessful()){
-                            for(QueryDocumentSnapshot doc : task.getResult()){
-                                doc.getReference().delete();
-                            }
-                            downloadMap(todaysDate);
-                        } else {
-                            Log.d(tag, "Error getting documents: ", task.getException());
-                        }
-                    }
-                });
-
-    }
-
-    public void downloadFBWallet(){
-
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-        db.collection("/user/" + email + "/Wallet")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot doc : task.getResult()) {
-                                collectedIDs.add(doc.get("id").toString());
-                            }
-                            parseJson();
-                        } else {
-                            Log.d(tag, "Error getting documents: ", task.getException());
-                        }
-
-                    }
-                });
-
-    }
-
-
 
     @Override
     public void onStart() {
         super.onStart();
         mapView.onStart();
+
+        if(locationEngine != null){
+            try {
+                locationEngine.requestLocationUpdates();
+            } catch(SecurityException ignored) {}
+            locationEngine.addLocationEngineListener(this);
+        }
 
     }
 
@@ -412,6 +322,10 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         super.onStop();
         mapView.onStop();
 
+        if(locationEngine != null) {
+            locationEngine.removeLocationEngineListener(this);
+            locationEngine.removeLocationUpdates();
+        }
     }
 
     @Override

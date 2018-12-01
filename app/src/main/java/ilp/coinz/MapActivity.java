@@ -246,7 +246,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     //Download todays coin map and update preferences
-    private void downloadTodaysMap(){
+    public void downloadTodaysMap(){
 
         //Restore preferences
         SharedPreferences settings = getSharedPreferences(preferencesFile, Context.MODE_PRIVATE);
@@ -380,6 +380,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onStop() {
         super.onStop();
         mapView.onStop();
+
         Log.d(tag, "Stopping and saving coin data");
         try {
             OutputStreamWriter outputStreamWriter = new OutputStreamWriter(this.openFileOutput("coinzdata.geojson", Context.MODE_PRIVATE));
