@@ -65,15 +65,15 @@ public class MainActivity extends AppCompatActivity {
     public HashMap<String, Coin> coinsCollection = new HashMap<>();
     public HashMap<String, Marker> markers = new HashMap<>();
     public ArrayList<String> collectedIDs = new ArrayList<>();
+    public ArrayList<String> bankedIDs = new ArrayList<>();
+    public int bankedCount;
+    public double goldBalance;
     private ExchangeRates exchangeRates;
     public String jsonResult;
 
     public boolean coinsReady = false;
 
     private MapFragment mapFragment;
-    private Fragment bankFragment;
-    private Fragment shopFragment;
-    private Fragment profileFragment;
 
     private FragmentManager fragmentManager = getSupportFragmentManager();
 
@@ -83,26 +83,20 @@ public class MainActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
 
+        mAuth = FirebaseAuth.getInstance();
+
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if(currentUser == null){
+            startActivity(new Intent(this, LoginActivity.class));
+        }
+
         setContentView(R.layout.activity_main);
         Mapbox.getInstance(this, getString(R.string.access_token));
 
-        bankFragment = new BankFragment();
-        shopFragment = new ShopFragment();
-        profileFragment = new ProfileFragment();
-
+        bankedCount = 0;
+        goldBalance = 0.0;
 
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-
-        //create fragments but do not show
-
-        transaction.add(R.id.fragment_container, bankFragment, "bankFragment");
-        transaction.add(R.id.fragment_container, shopFragment, "shopFragment");
-        transaction.add(R.id.fragment_container, profileFragment, "profileFragment");
-        transaction.detach(bankFragment);
-        transaction.detach(shopFragment);
-        transaction.detach(profileFragment);
-
-
 
 
         //Make map fragment, shown by default
@@ -125,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        mAuth = FirebaseAuth.getInstance();
+
     }
 
 
@@ -137,19 +131,22 @@ public class MainActivity extends AppCompatActivity {
             Fragment fragment;
             switch (item.getItemId()) {
                 case R.id.navigation_map:
-                    loadFragment("mapFragment");
+                    loadFragment(mapFragment, "mapFragment");
                     Log.d(tag, "map");
                     return true;
                 case R.id.navigation_bank:
-                    loadFragment("bankFragment");
+                    fragment = new BankFragment();
+                    loadFragment(fragment, "bankFragment");
                     Log.d(tag, "bank");
                     return true;
                 case R.id.navigation_shop:
-                    loadFragment("shopFragment");
+                    fragment = new ShopFragment();
+                    loadFragment(fragment, "shopFragment");
                     Log.d(tag, "shop");
                     return true;
                 case R.id.navigation_profile:
-                    loadFragment("profileFragment");
+                    fragment = new ProfileFragment();
+                    loadFragment(fragment, "profileFragment");
                     Log.d(tag, "profile");
                     return true;
             }
@@ -158,16 +155,27 @@ public class MainActivity extends AppCompatActivity {
     };
 
 
-    private void loadFragment(String tag) {
+    private void loadFragment(Fragment fragment, String tag) {
         // load fragment
-        if(fragmentManager.findFragmentByTag(tag) != null) {
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            Fragment oldFrag = fragmentManager.findFragmentByTag(currentFragment);
-            Fragment newFrag = fragmentManager.findFragmentByTag(tag);
-            transaction.detach(oldFrag);
-            transaction.attach(newFrag);
-            currentFragment = tag;
-            transaction.commit();
+        if (!tag.equals(currentFragment)) {
+            if (currentFragment.equals("mapFragment")) {
+                FragmentTransaction transaction = fragmentManager.beginTransaction();
+                transaction.hide(mapFragment);
+                transaction.add(R.id.fragment_container, fragment, tag);
+                currentFragment = tag;
+                transaction.commit();
+            } else {
+                FragmentTransaction transaction = fragmentManager.beginTransaction();
+                Fragment old = fragmentManager.findFragmentByTag(currentFragment);
+                transaction.detach(old);
+                if (tag.equals("mapFragment")) {
+                    transaction.show(mapFragment);
+                } else {
+                    transaction.add(R.id.fragment_container, fragment, tag);
+                }
+                currentFragment = tag;
+                transaction.commit();
+            }
         }
     }
 
@@ -209,9 +217,14 @@ public class MainActivity extends AppCompatActivity {
                 Coin tempCoin = new Coin(coinsjson.getJSONObject(i));
                 coinsCollection.put(tempCoin.getId(), tempCoin);
             }
+
+            for (String id : bankedIDs){
+                if(coinsCollection.containsKey(id)){ coinsCollection.get(id).setBanked(true); }
+            }
             for (String id : collectedIDs){
                 if(coinsCollection.containsKey(id)){ coinsCollection.get(id).setCollected(true); }
             }
+
 
         } catch (JSONException e){
             Log.d(tag, e.toString());
@@ -251,6 +264,10 @@ public class MainActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
                             for (QueryDocumentSnapshot doc : task.getResult()) {
+                                if(doc.getBoolean("banked")){
+                                    bankedCount += 1;
+                                    bankedIDs.add(doc.get("id").toString());
+                                }
                                 collectedIDs.add(doc.get("id").toString());
                             }
                             parseJson();
@@ -260,17 +277,38 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-
+        db.collection("/user/" + email + "/Bank")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                goldBalance = doc.getDouble("balance");
+                            }
+                        }
+                    }
+                });
     }
 
 
     @Override
     public void onStart(){
         super.onStart();
+        if(mapFragment.locationEngine != null){
+            try {
+                mapFragment.locationEngine.requestLocationUpdates();
+            } catch(SecurityException ignored) {}
+            mapFragment.locationEngine.addLocationEngineListener(mapFragment);
+        }
     }
 
     @Override
     public void onStop(){
         super.onStop();
+        if(mapFragment.locationEngine != null) {
+            mapFragment.locationEngine.removeLocationEngineListener(mapFragment);
+            mapFragment.locationEngine.removeLocationUpdates();
+        }
     }
 }

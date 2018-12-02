@@ -80,7 +80,7 @@ public class LoginActivity extends AppCompatActivity {
                                     Log.d(tag, "signInWithEmail:success");
                                     FirebaseUser user = auth.getCurrentUser();
 
-                                    startActivity(new Intent(LoginActivity.this, MapActivity.class));
+                                    startActivity(new Intent(LoginActivity.this, MainActivity.class));
                                     finish();
 
                                 } else {
@@ -136,12 +136,12 @@ public class LoginActivity extends AppCompatActivity {
                                     FirebaseFirestore db = FirebaseFirestore.getInstance();
 
                                     User user = new User(email);
-                                    GoldBalance gb = new GoldBalance();
+                                    GoldBalance gb = new GoldBalance(0.0);
 
-                                    db.collection("user").document(email).collection("Bank").add(gb);
+                                    db.collection("user").document(email).collection("Bank").document(email).set(gb);
 
 
-                                    startActivity(new Intent(LoginActivity.this, MapActivity.class));
+                                    startActivity(new Intent(LoginActivity.this, MainActivity.class));
                                     finish();
                                 }
                             }

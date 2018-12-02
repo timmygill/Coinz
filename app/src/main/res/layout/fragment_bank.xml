@@ -7,19 +7,81 @@
     android:layout_height="match_parent"
     tools:context=".BankFragment">
 
-    <!-- TODO: Update blank fragment layout -->
+
+    <Spinner
+        android:id="@+id/spinner"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="22dp"
+        android:layout_marginEnd="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/countValue" />
+
+    <Button
+        android:id="@+id/bankButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="140dp"
+        android:layout_marginTop="49dp"
+        android:layout_marginEnd="140dp"
+        android:text="Bank Coin"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinner" />
 
     <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="211dp"
-        android:layout_marginTop="255dp"
-        android:layout_marginEnd="147dp"
-        android:layout_marginBottom="385dp"
-        android:text="bank"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:id="@+id/balanceLabel"
+        android:layout_width="91dp"
+        android:layout_height="18dp"
+        android:layout_marginStart="160dp"
+        android:layout_marginTop="121dp"
+        android:layout_marginEnd="160dp"
+        android:text="Gold Balance"
+        android:textAlignment="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/countLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="140dp"
+        android:layout_marginTop="31dp"
+        android:layout_marginEnd="140dp"
+        android:layout_marginBottom="31dp"
+        android:text="Coins banked today:"
+        android:textAlignment="center"
+        app:layout_constraintBottom_toTopOf="@+id/countValue"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/balanceValue" />
+
+    <TextView
+        android:id="@+id/balanceValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="100dp"
+        android:layout_marginTop="22dp"
+        android:layout_marginEnd="100dp"
+        android:text="0"
+        android:textAlignment="viewEnd"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/balanceLabel" />
+
+    <TextView
+        android:id="@+id/countValue"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="100dp"
+        android:layout_marginTop="31dp"
+        android:layout_marginEnd="100dp"
+        android:text="0"
+        android:textAlignment="viewEnd"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/countLabel" />
 </android.support.constraint.ConstraintLayout>

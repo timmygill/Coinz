@@ -67,7 +67,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     private com.mapbox.mapboxsdk.maps.MapFragment.OnMapViewReadyCallback mapViewReadyCallback;
 
     private PermissionsManager permissionsManager;
-    private LocationEngine locationEngine;
+    public LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
 
 
@@ -118,12 +118,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         super.onCreateView(inflater, container, savedInstanceState);
         Context context = inflater.getContext();
         mapView = new MapView(context, MapFragmentUtils.resolveArgs(context, getArguments()));
-        return mapView;
-    }
-
-    @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
 
@@ -131,6 +125,13 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         if (mapViewReadyCallback != null) {
             mapViewReadyCallback.onMapViewReady(mapView);
         }
+        return mapView;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
     }
 
     @Override
@@ -231,13 +232,14 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
                 if (distance[0] <= collectionRadius && !(c.isCollected()) && activity.coinsReady)
                 {
                     c.setCollected(true);
+                    activity.collectedIDs.add(c.getId());
                     Log.d(tag, "Collected coin" + c.getId());
 
                     if (activity.markers.containsKey(c.getId())) { map.removeMarker(activity.markers.get(c.getId())); }
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                    db.collection("user").document(email).collection("Wallet").add(c);
+                    db.collection("user").document(email).collection("Wallet").document(c.getId()).set(c);
 
                 }
             }
@@ -337,7 +339,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        mapView.onDestroy();
+
     }
 }
 

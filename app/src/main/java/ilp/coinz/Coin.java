@@ -69,6 +69,10 @@ public class Coin {
         return collected;
     }
 
+    public boolean isBanked() {
+        return banked;
+    }
+
     public void setCollected(boolean collected){
         this.collected = collected;
     }

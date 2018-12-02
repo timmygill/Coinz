@@ -6,8 +6,8 @@ public class GoldBalance implements Serializable {
 
     private Double balance;
 
-    public GoldBalance(){
-        this.balance = 0.0;
+    public GoldBalance(Double balance){
+        this.balance = balance;
     }
 
     public void increaseBalance(Double increment){
