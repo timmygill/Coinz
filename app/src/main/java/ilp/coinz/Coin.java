@@ -15,19 +15,20 @@ public class Coin {
 
     private String id;
     private Double value;
-    private Currency currency;
+    private String currency;
     private String symbol;
     private Double longitude;
     private Double latitude;
     private boolean collected;
     private boolean banked;
+    private boolean transferred;
 
     public Coin(JSONObject coinjson){
         try {
             JSONObject tempprops = coinjson.getJSONObject("properties");
             this.id = tempprops.getString("id");
             this.value = Double.valueOf(tempprops.getString("value"));
-            this.currency = Currency.valueOf(tempprops.getString("currency"));
+            this.currency = tempprops.getString("currency");
             this.symbol = tempprops.getString("marker-symbol");
             JSONObject tempgeometry = coinjson.getJSONObject("geometry");
             JSONArray coords = tempgeometry.getJSONArray("coordinates");
@@ -35,6 +36,7 @@ public class Coin {
             this.latitude = Double.valueOf(coords.getString(1));
             this.collected = false;
             this.banked = false;
+            this.transferred = false;
         } catch (JSONException e){
             return;
         }
@@ -49,7 +51,7 @@ public class Coin {
         return value;
     }
 
-    public Currency getCurrency() {
+    public String  getCurrency() {
         return currency;
     }
 
@@ -71,6 +73,14 @@ public class Coin {
 
     public boolean isBanked() {
         return banked;
+    }
+
+    public boolean isTransferred() {
+        return transferred;
+    }
+
+    public void setTransferred(boolean transferred) {
+        this.transferred = transferred;
     }
 
     public void setCollected(boolean collected){

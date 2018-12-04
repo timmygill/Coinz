@@ -31,11 +31,30 @@
     <string name="lbl_forgot_password">Forgot password?</string>
     <string name="forgot_password_msg">We just need your registered Email Id to sent you password reset instructions.</string>
 
+    //Bottom Nav
     <string name="title_map">Map</string>
     <string name="title_bank">Bank</string>
     <string name="title_shop">Shop</string>
     <string name="title_profile">Profile</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
+    //Bank
+    <string name="bank_count_label">Coins banked today:</string>
+    <string name="bank_gold_label">Gold Balance</string>
+    <string name="bank_zero">0</string>
+    <string name="bank_button">Bank Coin</string>
+
+    //Transfer
+    <string name="transfer_email_prompt">Enter an email to send spare change to:</string>
+    <string name="transfer_coin_prompt">Select a coin to send:</string>
+    <string name="transfer_button">Transfer</string>
+
+    //SpareChange
+    <string name="spare_label">Since you last played, you have received Spare Change worth:</string>
+    <string name="spare_zero">0 gold</string>
+    <string name="spare_button">Bank Now</string>
+
+    //Profile
+    <string name="profile_LO_button">Logout</string>
+    <string name="profile_logged_in_as">Currently logged in as: </string>
+
 </resources>

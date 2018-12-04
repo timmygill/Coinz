@@ -12,7 +12,15 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -50,6 +58,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -68,8 +77,9 @@ public class MainActivity extends AppCompatActivity {
     public ArrayList<String> bankedIDs = new ArrayList<>();
     public int bankedCount;
     public double goldBalance;
-    private ExchangeRates exchangeRates;
+    public HashMap<String, Double> exchangeRates;
     public String jsonResult;
+    public double spareChangeValue;
 
     public boolean coinsReady = false;
 
@@ -95,6 +105,7 @@ public class MainActivity extends AppCompatActivity {
 
         bankedCount = 0;
         goldBalance = 0.0;
+        spareChangeValue = 0.0;
 
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 
@@ -120,6 +131,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
     }
 
 
@@ -135,7 +147,11 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(tag, "map");
                     return true;
                 case R.id.navigation_bank:
-                    fragment = new BankFragment();
+                    if(bankedCount < 25) {
+                        fragment = new BankFragment();
+                    } else {
+                        fragment = new TransferFragment();
+                    }
                     loadFragment(fragment, "bankFragment");
                     Log.d(tag, "bank");
                     return true;
@@ -189,7 +205,7 @@ public class MainActivity extends AppCompatActivity {
 
         //On new map, delete old coins from Firebase and update most recent map date.
         if (!(todaysDate.equals(downloadDate))) {
-            clearFBWallet();
+            clearFBWallet("Wallet");
 
             downloadDate = todaysDate;
 
@@ -210,7 +226,19 @@ public class MainActivity extends AppCompatActivity {
     public void parseJson(){
         try {
             JSONObject coindatajson = new JSONObject(jsonResult);
-            exchangeRates = new ExchangeRates(coindatajson.getJSONObject("rates"));
+
+            exchangeRates = new HashMap<>();
+            JSONObject exchanges = coindatajson.getJSONObject("rates");
+
+            Iterator<String> currencies = exchanges.keys();
+
+            while(currencies.hasNext()) {
+                String currency = currencies.next();
+                Log.d(tag, currency);
+                exchangeRates.put(currency, exchanges.getDouble(currency));
+                Log.d(tag, exchanges.getDouble(currency) + "");
+
+            }
 
             JSONArray coinsjson = coindatajson.getJSONArray("features");
             for (int i = 0; i < coinsjson.length(); i++) {
@@ -230,12 +258,13 @@ public class MainActivity extends AppCompatActivity {
             Log.d(tag, e.toString());
         }
         mapFragment.addCoinsToMap();
+        checkSpareChange();
     }
 
-    public void clearFBWallet(){
+    public void clearFBWallet(String walletToClear){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-        db.collection("/user/" + email + "/Wallet")
+        db.collection("/user/" + email + "/" + walletToClear)
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                     @Override
@@ -289,6 +318,76 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
+
+
+    }
+
+    public void checkSpareChange(){
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+        db.collection("/user/" + email + "/SpareChange")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                Double value = doc.getDouble("value");
+                                String currency = doc.getString("currency");
+                                spareChangeValue += value * exchangeRates.get(currency);
+                                Log.d(tag, spareChangeValue + "");
+                            }
+                            if (spareChangeValue > 0.0){
+                                spawnSCPopup();
+                                Log.d(tag, "spawn sc");
+                            }
+                        }
+                    }
+                });
+
+    }
+
+    public void spawnSCPopup(){
+        LayoutInflater inflater = (LayoutInflater)
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.sparechange_popup, null);
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        boolean focusable = true; // lets taps outside the popup also dismiss it
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+
+        TextView spareLabel = popupView.findViewById(R.id.spareValue);
+        spareLabel.setText(String.format("%.3f", spareChangeValue ) + " Gold");
+
+        Button spareButton = popupView.findViewById(R.id.spareButton);
+        spareButton.setOnClickListener(new View.OnClickListener(){
+            public void onClick(View v) {
+                goldBalance += spareChangeValue;
+                spareChangeValue = 0.0;
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(goldBalance));
+                clearFBWallet("SpareChange");
+
+                popupWindow.dismiss();
+
+            }
+        });
+
+        // show the popup window
+        // which view you pass in doesn't matter, it is only used for the window tolken
+        popupWindow.showAtLocation(popupView, Gravity.CENTER, 0, 0);
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                popupWindow.dismiss();
+                return true;
+            }
+        });
     }
 
 
