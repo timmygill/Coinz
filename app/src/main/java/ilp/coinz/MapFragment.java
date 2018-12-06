@@ -10,11 +10,13 @@ import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -34,8 +36,11 @@ import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.Polygon;
 import com.mapbox.mapboxsdk.annotations.Polyline;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
+import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.location.LocationComponent;
+import com.mapbox.mapboxsdk.location.LocationComponentOptions;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.MapboxMapOptions;
@@ -44,6 +49,7 @@ import com.mapbox.mapboxsdk.maps.SupportMapFragment;
 import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
+import com.mapbox.mapboxsdk.style.light.Position;
 import com.mapbox.mapboxsdk.utils.MapFragmentUtils;
 
 import org.json.JSONArray;
@@ -75,7 +81,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
     private PermissionsManager permissionsManager;
     public LocationEngine locationEngine;
-    private LocationLayerPlugin locationLayerPlugin;
 
 
     private double collectionRadius = 25;
@@ -113,7 +118,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
         activity = (MainActivity) getActivity();
 
-       activity.todaysDate = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
+        activity.todaysDate = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
 
         Mapbox.getInstance(getActivity(), getString(R.string.access_token));
 
@@ -159,7 +164,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         map.getUiSettings().setTiltGesturesEnabled(false);
 
         activity.downloadTodaysMap();
-        enableLocation();
+        enableLocationComponent();
     }
 
     @Override
@@ -170,62 +175,53 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
     }
 
-
-    private void enableLocation() {
+    @SuppressWarnings( {"MissingPermission"})
+    private void enableLocationComponent() {
         if (PermissionsManager.areLocationPermissionsGranted(getContext())) {
             Log.d(tag, "Permissions are granted");
-            initializeLocationEngine();
-            initializeLocationLayer();
+
+            LocationComponentOptions options = LocationComponentOptions.builder(getContext())
+                    .trackingGesturesManagement(true)
+                    .accuracyColor(ContextCompat.getColor(getContext(), R.color.colorPrimaryDark))
+                    .build();
+
+            // Get an instance of the component
+            LocationComponent locationComponent = map.getLocationComponent();
+
+            // Activate with options
+            locationComponent.activateLocationComponent(getContext(), options);
+
+            // Enable to make component visible
+            locationComponent.setLocationComponentEnabled(true);
+
+            // Set the component's camera mode
+            locationComponent.setCameraMode(CameraMode.TRACKING);
+            locationComponent.setRenderMode(RenderMode.NORMAL);
         } else {
-            Log.d(tag, "Permissions are not granted");
             permissionsManager = new PermissionsManager(this);
             permissionsManager.requestLocationPermissions(getActivity());
         }
     }
-
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults){
-        
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
+    @Override
+    public void onExplanationNeeded(List<String> permissionsToExplain) {
+        //TODO: tell user
+    }
 
-    @SuppressWarnings("MissingPermission")
-    private void initializeLocationEngine(){
-        locationEngine = new LocationEngineProvider(getActivity()).obtainBestLocationEngineAvailable();
-        locationEngine.setInterval(5000);
-        locationEngine.setFastestInterval(1000);
-        locationEngine.setPriority(LocationEnginePriority.HIGH_ACCURACY);
-        locationEngine.activate();
-
-        Location lastLocation = locationEngine.getLastLocation();
-        if (lastLocation != null){
-            setCameraPosition(lastLocation);
+    @Override
+    public void onPermissionResult(boolean granted) {
+        if (granted) {
+            enableLocationComponent();
         } else {
-            locationEngine.addLocationEngineListener(this);
+            //TODO: close app
+           activity.finish();
         }
     }
 
-    @SuppressWarnings("MissingPermission")
-    private void initializeLocationLayer(){
-        if(mapView == null){
-            Log.d(tag, "mapView is null") ;
-        } else {
-            if (map == null){
-                Log.d(tag, "map is null");
-            }else{
-                locationLayerPlugin = new LocationLayerPlugin(mapView, map, locationEngine);
-                locationLayerPlugin.setLocationLayerEnabled(true);
-                locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
-                locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
-                Lifecycle lifecycle = getLifecycle();
-                lifecycle.addObserver(locationLayerPlugin);
-            }
-        }
-    }
-
-    private void setCameraPosition(Location location){
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        map.animateCamera(CameraUpdateFactory.newLatLng(latLng));
-    }
 
     @Override
     public void onLocationChanged(Location location){
@@ -234,7 +230,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         } else {
             Log.d(tag, "[onLocationChanged] location is not null, radius: " + collectionRadius);
             collectionRadius = activity.playerRadius;
-            setCameraPosition(location);
 
             for (Coin c : activity.coinsCollection.values()){
                 float[] distance = new float[2];
@@ -266,20 +261,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         Log.d(tag, "[onConnected] location updates granted");
     }
 
-    @Override
-    public void onExplanationNeeded(List<String> permissionsToExplain){
-        Log.d(tag, "Permissions: " + permissionsToExplain.toString());
-    }
 
-    @Override
-    public void onPermissionResult(boolean granted){
-        Log.d(tag, "[onPermissionResult] granted == " + granted);
-        if(granted){
-            enableLocation();
-        } else {
-            //TODO: dialogue with user
-        }
-    }
 
     public void addCoinsToMap() {
         for (Coin coin : activity.coinsCollection.values()) {
