@@ -89,6 +89,9 @@ public class MainActivity extends AppCompatActivity {
 
     private String currentFragment;
 
+    public int playerMulti;
+    public int playerRadius;
+
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -106,6 +109,9 @@ public class MainActivity extends AppCompatActivity {
         bankedCount = 0;
         goldBalance = 0.0;
         spareChangeValue = 0.0;
+
+        playerMulti = 1;
+        playerRadius = 25;
 
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 
@@ -318,6 +324,23 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
+
+        db.collection("/user/" + email + "/Player")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot doc : task.getResult()) {
+                                playerMulti = doc.getLong("multi").intValue();
+                                playerRadius = doc.getLong("radius").intValue();
+                                Log.d(tag, "multi: " + playerMulti + " radius: " + playerRadius);
+                            }
+                        }
+                    }
+                });
+
+
 
 
     }

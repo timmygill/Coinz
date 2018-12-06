@@ -84,7 +84,7 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                         countValue.setText(activity.bankedCount + "/25");
 
                         Coin tempCoin = activity.coinsCollection.get(id);
-                        activity.goldBalance += tempCoin.getValue() * activity.exchangeRates.get(tempCoin.getCurrency());
+                        activity.goldBalance += activity.playerMulti * tempCoin.getValue() * activity.exchangeRates.get(tempCoin.getCurrency());
                         bankValue.setText(activity.goldBalance + " Gold");
 
                         FirebaseFirestore db = FirebaseFirestore.getInstance();

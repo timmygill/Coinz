@@ -4,6 +4,7 @@ package ilp.coinz;
 import android.arch.lifecycle.Lifecycle;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
@@ -30,6 +31,9 @@ import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
+import com.mapbox.mapboxsdk.annotations.Polygon;
+import com.mapbox.mapboxsdk.annotations.Polyline;
+import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
@@ -54,6 +58,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+
 
 public class MapFragment extends Fragment implements PermissionsListener, OnMapReadyCallback, LocationEngineListener, DownloadFileResponse {
 
@@ -71,8 +78,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     private LocationLayerPlugin locationLayerPlugin;
 
 
-
-    private float collectionRadius = 25;
+    private double collectionRadius = 25;
 
 
 
@@ -177,6 +183,10 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         }
     }
 
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults){
+        
+    }
+
 
     @SuppressWarnings("MissingPermission")
     private void initializeLocationEngine(){
@@ -222,7 +232,8 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         if(location == null){
             Log.d(tag, "[onLocationChanged] location is null");
         } else {
-            Log.d(tag, "[onLocationChanged] location is not null");
+            Log.d(tag, "[onLocationChanged] location is not null, radius: " + collectionRadius);
+            collectionRadius = activity.playerRadius;
             setCameraPosition(location);
 
             for (Coin c : activity.coinsCollection.values()){
@@ -275,7 +286,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
             if (!(activity.collectedIDs.contains(coin.getId()))){
                 LatLng pos = new LatLng(coin.getLatitude(), coin.getLongitude());
                 String snip = "VALUE: " + coin.getValue().toString();
-                String tit = coin.getCurrency().toString();
+                String tit = coin.getCurrency();
                 MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip);
                 try {
                     activity.markers.put(coin.getId(), map.addMarker(mo));
@@ -286,6 +297,8 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         }
         activity.coinsReady = true;
     }
+
+
 
     @Override
     public void onStart() {
