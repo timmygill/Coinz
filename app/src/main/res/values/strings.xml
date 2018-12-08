@@ -1,7 +1,11 @@
 <resources>
     <string name="myapp_name">Coinz</string>
     <string name="title_activity_main">Coinz</string>
+
+    //Mapbox api key
     <string name="access_token">pk.eyJ1IjoidGltbXlnaWxsIiwiYSI6ImNqbjNndDhhbTM2b3Mzd3F5Mjh5NjdvNDcifQ.aDnMQgQUFxRtG7LM-6s41A</string>
+
+    //Login
     <string name="action_sign_in_short">Register</string>
     <string name="email">Email</string>
     <string name="minimum_password">Password too short, enter minimum 6 characters!</string>
@@ -31,6 +35,9 @@
     <string name="lbl_forgot_password">Forgot password?</string>
     <string name="forgot_password_msg">We just need your registered Email Id to sent you password reset instructions.</string>
 
+    //Map
+    <string name="map_perm_explain">Your location is needed to play Coins.</string>
+
     //Bottom Nav
     <string name="title_map">Map</string>
     <string name="title_bank">Bank</string>
@@ -38,6 +45,8 @@
     <string name="title_profile">Profile</string>
 
     //Bank
+    <string name="bank_all_used">You have already deposited 25 coins today.</string>
+    <string name="bank_no_coins">You do not currently have any coins to bank.</string>
     <string name="bank_count_label">Coins banked today:</string>
     <string name="bank_gold_label">Gold Balance</string>
     <string name="bank_zero">0</string>
@@ -47,6 +56,7 @@
     <string name="transfer_email_prompt">Enter an email to send spare change to:</string>
     <string name="transfer_coin_prompt">Select a coin to send:</string>
     <string name="transfer_button">Transfer</string>
+    <string name="transfer_invalid_email">That email does not seem to be valid.</string>
 
     //SpareChange
     <string name="spare_label">Since you last played, you have received Spare Change worth:</string>
@@ -56,12 +66,16 @@
     //Profile
     <string name="profile_LO_button">Logout</string>
     <string name="profile_logged_in_as">Currently logged in as: </string>
+    <string name="profile_coins">You have collected a total of: </string>
+    <string name="profile_gold">You have earned a total of: </string>
+    <string name="profile_distance">You have travelled a total distance of: </string>
 
     //Shop
     <string name="shop_balance">Gold balance: </string>
     <string name="shop_multi">Coin multiplier: </string>
     <string name="shop_radius">Pickup radius:</string>
-    <string name="shop_button_multi">Multiplier</string>
-    <string name="shop_button_radius">Radius</string>
+    <string name="shop_buy">Buy</string>
+    <string name="shop_more_gold">You do not have enough gold to buy this.</string>
+    <string name="shop_maxed">You have already have the highest level of this power up.</string>
 
 </resources>

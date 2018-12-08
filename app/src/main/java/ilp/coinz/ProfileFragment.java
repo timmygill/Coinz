@@ -13,6 +13,8 @@ import android.widget.TextView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import org.w3c.dom.Text;
+
 import javax.annotation.Nullable;
 
 
@@ -48,6 +50,17 @@ public class ProfileFragment extends Fragment {
         TextView loggedInAs = (TextView) getView().findViewById(R.id.profileLIA);
         String prompt = getString(R.string.profile_logged_in_as) + " " + FirebaseAuth.getInstance().getCurrentUser().getEmail();
         loggedInAs.setText(prompt);
+
+        TextView coinsLabel = (TextView) getView().findViewById(R.id.profileCoins);
+        coinsLabel.setText(getString(R.string.profile_coins) + " " + activity.lifetimeCoins + " Coins");
+
+        TextView goldLabel = (TextView) getView().findViewById(R.id.profileGold);
+        goldLabel.setText(getString(R.string.profile_gold) + " " + String.format("%.3f", activity.goldBalance) + " Gold");
+
+        TextView distanceLabel = (TextView) getView().findViewById(R.id.profileDistance);
+        distanceLabel.setText(getString(R.string.profile_distance) + " " + activity.lifetimeDistance + "m");
+
+
 
         Button button = (Button) getView().findViewById(R.id.profileLOButton);
         button.setOnClickListener(new View.OnClickListener() {

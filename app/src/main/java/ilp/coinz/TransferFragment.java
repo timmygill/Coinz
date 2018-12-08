@@ -2,6 +2,7 @@ package ilp.coinz;
 
 
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.Log;
@@ -94,7 +95,7 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
                     }
 
                 } else {
-                    //TODO: warning for invalid email
+                    Snackbar.make(getView(), R.string.transfer_invalid_email, Snackbar.LENGTH_LONG);
                 }
             }
         });

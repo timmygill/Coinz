@@ -1,27 +1,23 @@
 package ilp.coinz;
 
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -65,7 +61,7 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
         spinnerItemToTag = new HashMap<>();
 
         bankValue = (TextView) getView().findViewById(R.id.balanceValue);
-        bankValue.setText(activity.goldBalance + " Gold");
+        bankValue.setText(String.format("%.3f", activity.goldBalance) + " Gold");
         countValue = (TextView) getView().findViewById(R.id.countValue);
         countValue.setText(activity.bankedCount + "/25");
 
@@ -84,13 +80,18 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                         countValue.setText(activity.bankedCount + "/25");
 
                         Coin tempCoin = activity.coinsCollection.get(id);
-                        activity.goldBalance += activity.playerMulti * tempCoin.getValue() * activity.exchangeRates.get(tempCoin.getCurrency());
+                        Double value = activity.playerMulti * tempCoin.getValue() * activity.exchangeRates.get(tempCoin.getCurrency());
+                        activity.goldBalance += value;
+                        activity.lifetimeGold += value;
+
                         bankValue.setText(activity.goldBalance + " Gold");
+
 
                         FirebaseFirestore db = FirebaseFirestore.getInstance();
                         String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
                         db.collection("user").document(email).collection("Wallet").document(id).set(activity.coinsCollection.get(id));
                         db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(activity.goldBalance));
+                        db.collection("user").document(email).collection("Player").document(email).update("lifetimeGold", activity.lifetimeGold);
 
 
                         spinnerItems.remove(selectedIndex);
@@ -101,18 +102,15 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                         spinner.setAdapter(spinnerArrayAdapter);
 
                     } else {
-                        //TODO: tell user all deposits used
+                        Snackbar.make(getView(), R.string.bank_all_used, Snackbar.LENGTH_LONG).show();
+
                     }
                 } else {
-                    //TODO: tell user no coin to bank
+                    Snackbar.make(getView(), R.string.bank_no_coins, Snackbar.LENGTH_LONG).show();
+
                 }
             }
         } );
-
-
-
-
-
 
 
         for (String id : activity.collectedIDs){
@@ -127,6 +125,8 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                 }
             }
         }
+
+
 
         ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.spinner_item, spinnerItems);
         spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);

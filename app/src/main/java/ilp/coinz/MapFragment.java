@@ -3,12 +3,10 @@ package ilp.coinz;
 
 import android.arch.lifecycle.Lifecycle;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.location.Location;
-import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -16,12 +14,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineListener;
 import com.mapbox.android.core.location.LocationEnginePriority;
@@ -29,37 +23,26 @@ import com.mapbox.android.core.location.LocationEngineProvider;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.Mapbox;
-import com.mapbox.mapboxsdk.annotations.Marker;
+import com.mapbox.mapboxsdk.annotations.Icon;
+import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
-import com.mapbox.mapboxsdk.annotations.Polygon;
-import com.mapbox.mapboxsdk.annotations.Polyline;
-import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.MapboxMapOptions;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-import com.mapbox.mapboxsdk.maps.SupportMapFragment;
 import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
 import com.mapbox.mapboxsdk.utils.MapFragmentUtils;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
 
 
 public class MapFragment extends Fragment implements PermissionsListener, OnMapReadyCallback, LocationEngineListener, DownloadFileResponse {
@@ -77,6 +60,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     public LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
 
+    private Location oldLocation;
 
     private double collectionRadius = 25;
 
@@ -183,9 +167,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         }
     }
 
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults){
-        
-    }
 
 
     @SuppressWarnings("MissingPermission")
@@ -231,10 +212,23 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     public void onLocationChanged(Location location){
         if(location == null){
             Log.d(tag, "[onLocationChanged] location is null");
-        } else {
+        } else if(activity.coinsReady) {
             Log.d(tag, "[onLocationChanged] location is not null, radius: " + collectionRadius);
+
             collectionRadius = activity.playerRadius;
             setCameraPosition(location);
+
+            if (oldLocation != null){
+                float[] distanceMoved  = new float[2];
+                Location.distanceBetween(location.getLatitude(),location.getLongitude(),oldLocation.getLatitude(),oldLocation.getLongitude(),distanceMoved);
+                activity.lifetimeDistance += distanceMoved[0];
+
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                db.collection("user").document(email).collection("Player").document(email).update("lifetimeDistance", activity.lifetimeDistance);
+            }
+
+            oldLocation = location;
 
             for (Coin c : activity.coinsCollection.values()){
                 float[] distance = new float[2];
@@ -248,15 +242,24 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
                     if (activity.markers.containsKey(c.getId())) { map.removeMarker(activity.markers.get(c.getId())); }
 
+                    activity.lifetimeCoins += 1;
+
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
                     db.collection("user").document(email).collection("Wallet").document(c.getId()).set(c);
+                    db.collection("user").document(email).collection("Player").document(email).update("lifetimeCoins", activity.lifetimeCoins);
 
                 }
             }
         }
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        Log.d(tag, "result received");
+
+        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
 
     @Override
     @SuppressWarnings("MissingPermission")
@@ -269,25 +272,30 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     @Override
     public void onExplanationNeeded(List<String> permissionsToExplain){
         Log.d(tag, "Permissions: " + permissionsToExplain.toString());
+        Snackbar.make(getView(), R.string.map_perm_explain, Snackbar.LENGTH_LONG).show();
     }
 
     @Override
     public void onPermissionResult(boolean granted){
         Log.d(tag, "[onPermissionResult] granted == " + granted);
         if(granted){
+            Log.d(tag, "Permission granted, enabling location");
             enableLocation();
         } else {
             //TODO: dialogue with user
+            activity.finish();
         }
     }
 
     public void addCoinsToMap() {
+        IconFactory iconFactory = IconFactory.getInstance(getContext());
+        Icon icon = iconFactory.fromResource(R.drawable.coinmarker);
         for (Coin coin : activity.coinsCollection.values()) {
             if (!(activity.collectedIDs.contains(coin.getId()))){
                 LatLng pos = new LatLng(coin.getLatitude(), coin.getLongitude());
                 String snip = "VALUE: " + coin.getValue().toString();
                 String tit = coin.getCurrency();
-                MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip);
+                MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip).icon(icon);
                 try {
                     activity.markers.put(coin.getId(), map.addMarker(mo));
                 } catch (NullPointerException e) {
@@ -297,8 +305,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         }
         activity.coinsReady = true;
     }
-
-
 
     @Override
     public void onStart() {
@@ -317,6 +323,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     @Override
     public void onResume() {
         super.onResume();
+        enableLocation();
         mapView.onResume();
     }
 

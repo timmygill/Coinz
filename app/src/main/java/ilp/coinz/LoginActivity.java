@@ -1,5 +1,6 @@
 package ilp.coinz;
 
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 
 
@@ -44,15 +45,8 @@ public class LoginActivity extends AppCompatActivity {
         inputEmail = (EditText) findViewById(R.id.email);
         inputPassword = (EditText) findViewById(R.id.password);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        btnResetPassword = (Button) findViewById(R.id.btn_reset_password);
 
-        btnResetPassword.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
 
-                startActivity(new Intent(LoginActivity.this, ResetPasswordActivity.class));
-            }
-        });
 
         btnSignIn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -62,12 +56,12 @@ public class LoginActivity extends AppCompatActivity {
                 String password = inputPassword.getText().toString().trim();
 
                 if (TextUtils.isEmpty(email)) {
-                    Toast.makeText(getApplicationContext(), "Enter email address!", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(findViewById(R.id.loginLayout), "Enter email!", Snackbar.LENGTH_SHORT).show();
                     return;
                 }
 
                 if (TextUtils.isEmpty(password)) {
-                    Toast.makeText(getApplicationContext(), "Enter password!", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(findViewById(R.id.loginLayout), "Enter password!", Snackbar.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -86,8 +80,7 @@ public class LoginActivity extends AppCompatActivity {
                                 } else {
                                     // If sign in fails, display a message to the user.
                                     Log.w(tag, "signInWithEmail:failure", task.getException());
-                                    Toast.makeText(LoginActivity.this, "Authentication failed.",
-                                            Toast.LENGTH_SHORT).show();
+                                    Snackbar.make(findViewById(R.id.loginLayout), "Authentication failed.", Snackbar.LENGTH_SHORT).show();
                                 }
                             }
                         });
@@ -103,17 +96,17 @@ public class LoginActivity extends AppCompatActivity {
                 String password = inputPassword.getText().toString().trim();
 
                 if (TextUtils.isEmpty(email)) {
-                    Toast.makeText(getApplicationContext(), "Enter email address!", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(findViewById(R.id.loginLayout), "Enter email!", Snackbar.LENGTH_SHORT).show();
                     return;
                 }
 
                 if (TextUtils.isEmpty(password)) {
-                    Toast.makeText(getApplicationContext(), "Enter password!", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(findViewById(R.id.loginLayout), "Enter password!", Snackbar.LENGTH_SHORT).show();
                     return;
                 }
 
                 if (password.length() < 6) {
-                    Toast.makeText(getApplicationContext(), "Password too short, enter minimum 6 characters!", Toast.LENGTH_SHORT).show();
+                    Snackbar.make(findViewById(R.id.loginLayout), "Password too short, enter minimum 6 characters!", Snackbar.LENGTH_SHORT).show();
                     return;
                 }
 
@@ -123,20 +116,18 @@ public class LoginActivity extends AppCompatActivity {
                         .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
-                                Toast.makeText(LoginActivity.this, "createUserWithEmail:onComplete:" + task.isSuccessful(), Toast.LENGTH_SHORT).show();
                                 progressBar.setVisibility(View.GONE);
                                 // If sign in fails, display a message to the user. If sign in succeeds
                                 // the auth state listener will be notified and logic to handle the
                                 // signed in user can be handled in the listener.
                                 if (!task.isSuccessful()) {
-                                    Toast.makeText(LoginActivity.this, "Authentication failed." + task.getException(),
-                                            Toast.LENGTH_SHORT).show();
+                                    Snackbar.make(findViewById(R.id.loginLayout), "Authentication failed.", Snackbar.LENGTH_SHORT).show();
                                 } else {
 
                                     FirebaseFirestore db = FirebaseFirestore.getInstance();
 
                                     GoldBalance gb = new GoldBalance(0.0);
-                                    Player player = new Player(1, 25);
+                                    Player player = new Player(1, 25, 0, 0, 0);
 
                                     db.collection("user").document(email).collection("Bank").document(email).set(gb);
                                     db.collection("user").document(email).collection("Player").document(email).set(player);

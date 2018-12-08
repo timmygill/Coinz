@@ -3,7 +3,6 @@ package ilp.coinz;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -21,7 +20,6 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -30,27 +28,12 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.mapbox.android.core.location.LocationEngine;
-import com.mapbox.android.core.location.LocationEngineListener;
-import com.mapbox.android.core.location.LocationEnginePriority;
-import com.mapbox.android.core.location.LocationEngineProvider;
-import com.mapbox.android.core.permissions.PermissionsListener;
-import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
-import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.constants.Style;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.maps.MapView;
-import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.MapboxMapOptions;
-import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-import com.mapbox.mapboxsdk.maps.SupportMapFragment;
-import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
-import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
-import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
-
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -59,12 +42,10 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
 
-    private FirebaseAuth mAuth;
     final String tag = "MainActivity";
 
     public String todaysDate = ""; //YYYY/MM/DD
@@ -92,10 +73,15 @@ public class MainActivity extends AppCompatActivity {
     public int playerMulti;
     public int playerRadius;
 
+    public int lifetimeCoins;
+    public double lifetimeGold;
+    public float lifetimeDistance;
+
     @Override
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
 
+        FirebaseAuth mAuth;
         mAuth = FirebaseAuth.getInstance();
 
         FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -113,12 +99,16 @@ public class MainActivity extends AppCompatActivity {
         playerMulti = 1;
         playerRadius = 25;
 
+        lifetimeCoins = 0;
+        lifetimeGold = 0.0;
+        lifetimeDistance = 0;
+
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 
 
         //Make map fragment, shown by default
         MapboxMapOptions options = new MapboxMapOptions()
-                .styleUrl(Style.MAPBOX_STREETS)
+                .styleUrl(Style.DARK)
                 .camera(new CameraPosition.Builder()
                         .target(new LatLng(55.944, -3.188396))
                         .zoom(15)
@@ -132,11 +122,6 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.bottomNavigationView);
         navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
-
-
-
-
 
     }
 
@@ -334,6 +319,9 @@ public class MainActivity extends AppCompatActivity {
                             for (QueryDocumentSnapshot doc : task.getResult()) {
                                 playerMulti = doc.getLong("multi").intValue();
                                 playerRadius = doc.getLong("radius").intValue();
+                                lifetimeCoins = doc.getLong("lifetimeCoins").intValue();
+                                lifetimeGold = doc.getDouble("lifetimeGold");
+                                lifetimeDistance = doc.getDouble("lifetimeDistance").floatValue();
                                 Log.d(tag, "multi: " + playerMulti + " radius: " + playerRadius);
                             }
                         }

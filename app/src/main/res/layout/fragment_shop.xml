@@ -11,18 +11,18 @@
         android:id="@+id/shopBalance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="40dp"
         android:text="@string/shop_balance"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/imageView2" />
 
     <TextView
         android:id="@+id/shopMulti"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="150dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="290dp"
         android:text="@string/shop_multi"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -31,8 +31,8 @@
         android:id="@+id/shopRadius"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="150dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginTop="290dp"
+        android:layout_marginEnd="32dp"
         android:text="@string/shop_radius"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -41,37 +41,49 @@
         android:id="@+id/shopNextMulti"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="60dp"
+        android:layout_marginStart="64dp"
+        android:layout_marginTop="8dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/shopMulti" />
+        app:layout_constraintTop_toBottomOf="@+id/shopButtonMulti" />
 
     <TextView
         android:id="@+id/shopNextRadius"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="60dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="48dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/shopRadius" />
+        app:layout_constraintTop_toBottomOf="@+id/shopButtonRadius" />
 
     <Button
         android:id="@+id/shopButtonMulti"
-        android:layout_width="wrap_content"
+        android:layout_width="104dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="42dp"
-        android:text="@string/shop_button_multi"
+        android:layout_marginStart="48dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/shop_buy"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/shopNextMulti" />
+        app:layout_constraintTop_toBottomOf="@+id/shopMulti" />
 
     <Button
         android:id="@+id/shopButtonRadius"
-        android:layout_width="wrap_content"
+        android:layout_width="104dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="42dp"
-        android:layout_marginEnd="20dp"
-        android:text="@string/shop_button_radius"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="36dp"
+        android:text="@string/shop_buy"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/shopNextRadius" />
+        app:layout_constraintTop_toBottomOf="@+id/shopRadius" />
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginStart="198dp"
+        android:layout_marginTop="100dp"
+        android:layout_marginEnd="198dp"
+        android:src="@drawable/ic_store_black_24dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 </android.support.constraint.ConstraintLayout>

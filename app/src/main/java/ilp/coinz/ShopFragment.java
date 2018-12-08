@@ -1,6 +1,7 @@
 package ilp.coinz;
 
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -64,7 +65,7 @@ public class ShopFragment extends Fragment {
 
     public void updateText(){
         balance = (TextView) getView().findViewById(R.id.shopBalance);
-        String balanceText = getString(R.string.shop_balance) + " " + activity.goldBalance;
+        String balanceText = getString(R.string.shop_balance) + " " + String.format("%.3f", activity.goldBalance);
         balance.setText(balanceText);
 
         multi = (TextView) getView().findViewById(R.id.shopMulti);
@@ -88,39 +89,49 @@ public class ShopFragment extends Fragment {
         Button multiButton = (Button) getView().findViewById(R.id.shopButtonMulti);
         multiButton.setOnClickListener( new View.OnClickListener() {
             public void onClick(View v ) {
-                if(activity.goldBalance > nextMultiCost && activity.playerMulti < maxMulti){
-                    activity.goldBalance -= nextMultiCost;
-                    activity.playerMulti += 1;
+                if(activity.playerMulti < maxMulti) {
+                    if (activity.goldBalance > nextMultiCost) {
+                        activity.goldBalance -= nextMultiCost;
+                        activity.playerMulti += 1;
 
-                    FirebaseFirestore db = FirebaseFirestore.getInstance();
-                    String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                    db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(activity.goldBalance));
-                    db.collection("user").document(email).collection("Player").document(email).set(new Player(activity.playerMulti, activity.playerRadius));
+                        FirebaseFirestore db = FirebaseFirestore.getInstance();
+                        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                        db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(activity.goldBalance));
+                        db.collection("user").document(email).collection("Player").document(email).set(new Player(activity.playerMulti, activity.playerRadius, activity.lifetimeCoins, activity.lifetimeGold, activity.lifetimeDistance));
 
-                    calculatePrices();
-                    updateText();
+                        calculatePrices();
+                        updateText();
 
+                    } else {
+                        Snackbar.make(getView(),R.string.shop_more_gold, Snackbar.LENGTH_LONG);
+                    }
+                } else {
+                    Snackbar.make(getView(),R.string.shop_maxed, Snackbar.LENGTH_LONG);
                 }
-
             }
         });
         Button radiusButton = (Button) getView().findViewById(R.id.shopButtonRadius);
         radiusButton.setOnClickListener( new View.OnClickListener() {
             public void onClick(View v ) {
-                if(activity.goldBalance > nextRadiusCost && activity.playerRadius < maxRadius){
-                    activity.goldBalance -= nextRadiusCost;
-                    activity.playerRadius += 1;
+                if(activity.playerRadius < maxRadius) {
+                    if (activity.goldBalance > nextRadiusCost) {
+                        activity.goldBalance -= nextRadiusCost;
+                        activity.playerRadius += 1;
 
-                    FirebaseFirestore db = FirebaseFirestore.getInstance();
-                    String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                    db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(activity.goldBalance));
-                    db.collection("user").document(email).collection("Player").document(email).set(new Player(activity.playerMulti, activity.playerRadius));
+                        FirebaseFirestore db = FirebaseFirestore.getInstance();
+                        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                        db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(activity.goldBalance));
+                        db.collection("user").document(email).collection("Player").document(email).set(new Player(activity.playerMulti, activity.playerRadius, activity.lifetimeCoins, activity.lifetimeGold, activity.lifetimeDistance));
 
-                    calculatePrices();
-                    updateText();
+                        calculatePrices();
+                        updateText();
 
+                    } else {
+                        Snackbar.make(getView(),R.string.shop_more_gold, Snackbar.LENGTH_LONG);
+                    }
+                } else {
+                    Snackbar.make(getView(),R.string.shop_maxed, Snackbar.LENGTH_LONG);
                 }
-
             }
         });
 
