@@ -59,21 +59,21 @@ public class ShopFragment extends Fragment {
     }
 
     public void calculatePrices(){
-        nextMultiCost = activity.playerMulti * activity.playerMulti * 10000;
-        nextRadiusCost = (activity.playerRadius - 24) * (activity.playerRadius - 24) * 10000;
+        nextMultiCost = activity.getPlayerMulti() * activity.getPlayerMulti() * 10000;
+        nextRadiusCost = (activity.getPlayerRadius() - 24) * (activity.getPlayerRadius() - 24) * 10000;
     }
 
     public void updateText(){
         balance = (TextView) getView().findViewById(R.id.shopBalance);
-        String balanceText = getString(R.string.shop_balance) + " " + String.format("%.3f", activity.goldBalance);
+        String balanceText = getString(R.string.shop_balance) + " " + String.format("%.3f", activity.getGoldBalance());
         balance.setText(balanceText);
 
         multi = (TextView) getView().findViewById(R.id.shopMulti);
-        String multiText = getString(R.string.shop_multi) + " " + activity.playerMulti + " / "  + maxMulti;
+        String multiText = getString(R.string.shop_multi) + " " + activity.getPlayerMulti() + " / "  + maxMulti;
         multi.setText(multiText);
 
         radius = (TextView) getView().findViewById(R.id.shopRadius);
-        String radiusText = getString(R.string.shop_radius) + " " + activity.playerRadius + " / " + maxRadius;
+        String radiusText = getString(R.string.shop_radius) + " " + activity.getPlayerRadius() + " / " + maxRadius;
         radius.setText(radiusText);
 
         multiNext = (TextView) getView().findViewById(R.id.shopNextMulti);
@@ -89,15 +89,14 @@ public class ShopFragment extends Fragment {
         Button multiButton = (Button) getView().findViewById(R.id.shopButtonMulti);
         multiButton.setOnClickListener( new View.OnClickListener() {
             public void onClick(View v ) {
-                if(activity.playerMulti < maxMulti) {
-                    if (activity.goldBalance > nextMultiCost) {
-                        activity.goldBalance -= nextMultiCost;
-                        activity.playerMulti += 1;
+                if(activity.getPlayerMulti() < maxMulti) {
+                    if (activity.getGoldBalance() > nextMultiCost) {
+                        activity.setGoldBalance(activity.getGoldBalance() - nextMultiCost);
+                        activity.setPlayerMulti(activity.getPlayerMulti() + 1);
 
                         FirebaseFirestore db = FirebaseFirestore.getInstance();
                         String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                        db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(activity.goldBalance));
-                        db.collection("user").document(email).collection("Player").document(email).set(new Player(activity.playerMulti, activity.playerRadius, activity.lifetimeCoins, activity.lifetimeGold, activity.lifetimeDistance));
+                        db.collection("user").document(email).collection("Player").document(email).set(new Player(activity.getGoldBalance(), activity.getPlayerMulti(), activity.getPlayerRadius(), activity.getLifetimeCoins(), activity.getLifetimeGold(), activity.getLifetimeDistance()));
 
                         calculatePrices();
                         updateText();
@@ -113,15 +112,14 @@ public class ShopFragment extends Fragment {
         Button radiusButton = (Button) getView().findViewById(R.id.shopButtonRadius);
         radiusButton.setOnClickListener( new View.OnClickListener() {
             public void onClick(View v ) {
-                if(activity.playerRadius < maxRadius) {
-                    if (activity.goldBalance > nextRadiusCost) {
-                        activity.goldBalance -= nextRadiusCost;
-                        activity.playerRadius += 1;
+                if(activity.getPlayerRadius() < maxRadius) {
+                    if (activity.getGoldBalance() > nextRadiusCost) {
+                        activity.setGoldBalance(activity.getGoldBalance() - nextRadiusCost);
+                        activity.setPlayerRadius(activity.getPlayerRadius() + 1);
 
                         FirebaseFirestore db = FirebaseFirestore.getInstance();
                         String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                        db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(activity.goldBalance));
-                        db.collection("user").document(email).collection("Player").document(email).set(new Player(activity.playerMulti, activity.playerRadius, activity.lifetimeCoins, activity.lifetimeGold, activity.lifetimeDistance));
+                        db.collection("user").document(email).collection("Player").document(email).set(new Player(activity.getGoldBalance(), activity.getPlayerMulti(), activity.getPlayerRadius(), activity.getLifetimeCoins(), activity.getLifetimeGold(), activity.getLifetimeDistance()));
 
                         calculatePrices();
                         updateText();

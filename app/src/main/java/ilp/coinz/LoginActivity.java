@@ -26,7 +26,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 public class LoginActivity extends AppCompatActivity {
 
     private EditText inputEmail, inputPassword;
-    private Button btnSignIn, btnSignUp, btnResetPassword;
+    private Button btnSignIn, btnSignUp;
     private ProgressBar progressBar;
     private FirebaseAuth auth;
 
@@ -126,12 +126,9 @@ public class LoginActivity extends AppCompatActivity {
 
                                     FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-                                    GoldBalance gb = new GoldBalance(0.0);
-                                    Player player = new Player(1, 25, 0, 0, 0);
+                                    Player player = new Player(0,1, 25, 0, 0, 0);
 
-                                    db.collection("user").document(email).collection("Bank").document(email).set(gb);
                                     db.collection("user").document(email).collection("Player").document(email).set(player);
-
 
                                     startActivity(new Intent(LoginActivity.this, MainActivity.class));
                                     finish();

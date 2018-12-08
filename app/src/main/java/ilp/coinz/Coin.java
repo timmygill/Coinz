@@ -1,5 +1,7 @@
 package ilp.coinz;
 
+import android.util.Log;
+
 import com.mapbox.mapboxsdk.annotations.BaseMarkerOptions;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
@@ -38,7 +40,7 @@ public class Coin {
             this.banked = false;
             this.transferred = false;
         } catch (JSONException e){
-            return;
+            Log.d("Coin", "JSON error creating coin object");
         }
     }
 

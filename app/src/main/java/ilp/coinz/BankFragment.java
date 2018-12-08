@@ -1,6 +1,8 @@
 package ilp.coinz;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.util.Log;
@@ -22,17 +24,18 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+@SuppressWarnings("ConstantConditions")
 public class BankFragment extends Fragment implements AdapterView.OnItemSelectedListener {
 
     public MainActivity activity;
 
     private int selectedIndex;
-    HashMap<String, String> spinnerItemToTag;
-    ArrayList<String> spinnerItems;
-    Spinner spinner;
+    private HashMap<String, String> spinnerItemToTag;
+    private ArrayList<String> spinnerItems;
+    private Spinner spinner;
 
-    TextView bankValue;
-    TextView countValue;
+    private TextView bankValue;
+    private TextView countValue;
 
     public BankFragment() {
 
@@ -47,76 +50,76 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_bank, container, false);
     }
 
+    @SuppressLint({"DefaultLocale", "SetTextI18n"})
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState){
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState){
 
-        Log.d("bank", activity.collectedIDs.toString());
 
         spinnerItems = new ArrayList<>();
         spinnerItemToTag = new HashMap<>();
 
-        bankValue = (TextView) getView().findViewById(R.id.balanceValue);
-        bankValue.setText(String.format("%.3f", activity.goldBalance) + " Gold");
-        countValue = (TextView) getView().findViewById(R.id.countValue);
-        countValue.setText(activity.bankedCount + "/25");
+        bankValue = Objects.requireNonNull(getView()).findViewById(R.id.balanceValue);
+        bankValue.setText(String.format("%.3f", activity.getGoldBalance()) + " Gold");
+        countValue = getView().findViewById(R.id.countValue);
+        countValue.setText(activity.getBankedCount() + "/25");
 
-        spinner = (Spinner) getView().findViewById(R.id.spinner);
+        spinner = getView().findViewById(R.id.spinner);
         spinner.setOnItemSelectedListener(this);
 
-        Button button = (Button) getView().findViewById(R.id.bankButton);
-        button.setOnClickListener( new View.OnClickListener() {
-            public void onClick(View v) {
-                if (spinnerItems.size() > 0 && selectedIndex < spinnerItems.size()) {
-                    if (activity.bankedCount < 25 && spinnerItems.get(selectedIndex) != null) {
-                        String id = spinnerItemToTag.get(spinnerItems.get(selectedIndex));
-                        activity.coinsCollection.get(id).setBanked(true);
+        Button button = getView().findViewById(R.id.bankButton);
+        button.setOnClickListener(v -> {
+            if (spinnerItems.size() > 0 && selectedIndex < spinnerItems.size()) {
+                if (activity.getBankedCount() < 25 && spinnerItems.get(selectedIndex) != null) {
+                    String id = spinnerItemToTag.get(spinnerItems.get(selectedIndex));
+                    Objects.requireNonNull(activity.getCoinsCollection().get(id)).setBanked(true);
 
-                        activity.bankedCount += 1;
-                        countValue.setText(activity.bankedCount + "/25");
+                    activity.setBankedCount(activity.getBankedCount() + 1);
+                    countValue.setText(activity.getBankedCount() + "/25");
 
-                        Coin tempCoin = activity.coinsCollection.get(id);
-                        Double value = activity.playerMulti * tempCoin.getValue() * activity.exchangeRates.get(tempCoin.getCurrency());
-                        activity.goldBalance += value;
-                        activity.lifetimeGold += value;
+                    Coin tempCoin = activity.getCoinsCollection().get(id);
+                    assert tempCoin != null;
+                    Double value = activity.getPlayerMulti() * tempCoin.getValue() * activity.getExchangeRates().get(tempCoin.getCurrency());
+                    activity.setGoldBalance(activity.getGoldBalance() + value);
+                    activity.setLifetimeGold( activity.getLifetimeGold() + value);
 
-                        bankValue.setText(activity.goldBalance + " Gold");
-
-
-                        FirebaseFirestore db = FirebaseFirestore.getInstance();
-                        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                        db.collection("user").document(email).collection("Wallet").document(id).set(activity.coinsCollection.get(id));
-                        db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(activity.goldBalance));
-                        db.collection("user").document(email).collection("Player").document(email).update("lifetimeGold", activity.lifetimeGold);
+                    bankValue.setText(activity.getGoldBalance()+ " Gold");
 
 
-                        spinnerItems.remove(selectedIndex);
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    String email = Objects.requireNonNull(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getEmail());
+                    db.collection("user").document(email).collection("Wallet").document(Objects.requireNonNull(id)).set(Objects.requireNonNull(activity.getCoinsCollection().get(id)));
+                    db.collection("user").document(email).collection("Player").document(email).update("goldBalance", activity.getGoldBalance());
+                    db.collection("user").document(email).collection("Player").document(email).update("lifetimeGold", activity.getLifetimeGold());
 
-                        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.spinner_item, spinnerItems);
-                        spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-                        spinner.setAdapter(spinnerArrayAdapter);
+                    spinnerItems.remove(selectedIndex);
 
-                    } else {
-                        Snackbar.make(getView(), R.string.bank_all_used, Snackbar.LENGTH_LONG).show();
+                    ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(Objects.requireNonNull(getActivity()), R.layout.spinner_item, spinnerItems);
+                    spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-                    }
+                    spinner.setAdapter(spinnerArrayAdapter);
+
                 } else {
-                    Snackbar.make(getView(), R.string.bank_no_coins, Snackbar.LENGTH_LONG).show();
+                    Snackbar.make(getView(), R.string.bank_all_used, Snackbar.LENGTH_LONG).show();
 
                 }
+            } else {
+                Snackbar.make(getView(), R.string.bank_no_coins, Snackbar.LENGTH_LONG).show();
+
             }
-        } );
+        });
 
 
-        for (String id : activity.collectedIDs){
+        for (String id : activity.getCollectedIDs()){
             Log.d("bank", id);
-            if (activity.coinsCollection.containsKey(id)) {
-                Coin tempCoin = activity.coinsCollection.get(id);
+            if (activity.getCoinsCollection().containsKey(id)) {
+                Coin tempCoin = activity.getCoinsCollection().get(id);
+                assert tempCoin != null;
                 if(!tempCoin.isBanked()) {
                     String item = tempCoin.getCurrency() + " : " + String.format("%.3f", tempCoin.getValue());
                     spinnerItemToTag.put(item, id);
@@ -125,16 +128,10 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                 }
             }
         }
-
-
-
-        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.spinner_item, spinnerItems);
+        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<>(Objects.requireNonNull(getActivity()), R.layout.spinner_item, spinnerItems);
         spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         spinner.setAdapter(spinnerArrayAdapter);
-
-
-
     }
 
     @Override
@@ -144,24 +141,5 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
 
     @Override
     public void onNothingSelected(AdapterView<?> arg0) {
-        // TODO Auto-generated method stub
     }
-
-    @Override
-    public void onStart(){
-        super.onStart();
-    }
-
-    @Override
-    public void onPause(){
-        super.onPause();
-    }
-
-    @Override
-    public void onStop(){
-        super.onStop();
-    }
-
-
-
 }

@@ -97,7 +97,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
         activity = (MainActivity) getActivity();
 
-       activity.todaysDate = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
+       activity.setTodaysDate(new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime()));
 
         Mapbox.getInstance(getActivity(), getString(R.string.access_token));
 
@@ -149,7 +149,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     @Override
     public void downloadFinish(String result){
 
-        activity.jsonResult = result;
+        activity.setJsonResult(result);
         activity.downloadFBWallet();
 
     }
@@ -212,42 +212,42 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     public void onLocationChanged(Location location){
         if(location == null){
             Log.d(tag, "[onLocationChanged] location is null");
-        } else if(activity.coinsReady) {
+        } else if(activity.isCoinsReady()){
             Log.d(tag, "[onLocationChanged] location is not null, radius: " + collectionRadius);
 
-            collectionRadius = activity.playerRadius;
+            collectionRadius = activity.getPlayerRadius();
             setCameraPosition(location);
 
             if (oldLocation != null){
                 float[] distanceMoved  = new float[2];
                 Location.distanceBetween(location.getLatitude(),location.getLongitude(),oldLocation.getLatitude(),oldLocation.getLongitude(),distanceMoved);
-                activity.lifetimeDistance += distanceMoved[0];
+                activity.setLifetimeDistance(activity.getLifetimeDistance() + distanceMoved[0]);
 
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
                 String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                db.collection("user").document(email).collection("Player").document(email).update("lifetimeDistance", activity.lifetimeDistance);
+                db.collection("user").document(email).collection("Player").document(email).update("lifetimeDistance", activity.getLifetimeDistance());
             }
 
             oldLocation = location;
 
-            for (Coin c : activity.coinsCollection.values()){
+            for (Coin c : activity.getCoinsCollection().values()){
                 float[] distance = new float[2];
                 Location.distanceBetween(location.getLatitude(),location.getLongitude(),c.getLatitude(),c.getLongitude(),distance);
 
-                if (distance[0] <= collectionRadius && !(c.isCollected()) && activity.coinsReady)
+                if (distance[0] <= collectionRadius && !(c.isCollected()) && activity.isCoinsReady())
                 {
                     c.setCollected(true);
-                    activity.collectedIDs.add(c.getId());
+                    activity.getCollectedIDs().add(c.getId());
                     Log.d(tag, "Collected coin" + c.getId());
 
-                    if (activity.markers.containsKey(c.getId())) { map.removeMarker(activity.markers.get(c.getId())); }
+                    if (activity.getMarkers().containsKey(c.getId())) { map.removeMarker(activity.getMarkers().get(c.getId())); }
 
-                    activity.lifetimeCoins += 1;
+                    activity.setLifetimeCoins(activity.getLifetimeCoins() + 1);
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
                     db.collection("user").document(email).collection("Wallet").document(c.getId()).set(c);
-                    db.collection("user").document(email).collection("Player").document(email).update("lifetimeCoins", activity.lifetimeCoins);
+                    db.collection("user").document(email).collection("Player").document(email).update("lifetimeCoins", activity.getLifetimeCoins());
 
                 }
             }
@@ -290,20 +290,20 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     public void addCoinsToMap() {
         IconFactory iconFactory = IconFactory.getInstance(getContext());
         Icon icon = iconFactory.fromResource(R.drawable.coinmarker);
-        for (Coin coin : activity.coinsCollection.values()) {
-            if (!(activity.collectedIDs.contains(coin.getId()))){
+        for (Coin coin : activity.getCoinsCollection().values()) {
+            if (!(activity.getCollectedIDs().contains(coin.getId()))){
                 LatLng pos = new LatLng(coin.getLatitude(), coin.getLongitude());
                 String snip = "VALUE: " + coin.getValue().toString();
                 String tit = coin.getCurrency();
                 MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip).icon(icon);
                 try {
-                    activity.markers.put(coin.getId(), map.addMarker(mo));
+                    activity.getMarkers().put(coin.getId(), map.addMarker(mo));
                 } catch (NullPointerException e) {
                     Log.d(tag, e.toString());
                 }
             }
         }
-        activity.coinsReady = true;
+        activity.setCoinsReady(true);
     }
 
     @Override

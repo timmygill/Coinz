@@ -13,7 +13,7 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
 
     private final String tag = "DownloadFileTask";
 
-    public DownloadFileResponse delegate = null;
+    private DownloadFileResponse delegate = null;
 
     @Override
     protected String doInBackground(String... urls){
@@ -65,5 +65,9 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
             Log.d(tag, "Fatal error, coin data not found");
             Log.d(tag, e.toString());
         }
+    }
+
+    public void setDelegate(DownloadFileResponse delegate) {
+        this.delegate = delegate;
     }
 }

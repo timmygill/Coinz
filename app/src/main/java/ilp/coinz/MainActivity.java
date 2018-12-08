@@ -48,21 +48,21 @@ public class MainActivity extends AppCompatActivity {
 
     final String tag = "MainActivity";
 
-    public String todaysDate = ""; //YYYY/MM/DD
+    private String todaysDate = ""; //YYYY/MM/DD
     private String downloadDate = ""; //YYYY/MM/DD
     private final String preferencesFile = "MyPrefsFile";
 
-    public HashMap<String, Coin> coinsCollection = new HashMap<>();
-    public HashMap<String, Marker> markers = new HashMap<>();
-    public ArrayList<String> collectedIDs = new ArrayList<>();
-    public ArrayList<String> bankedIDs = new ArrayList<>();
-    public int bankedCount;
-    public double goldBalance;
-    public HashMap<String, Double> exchangeRates;
-    public String jsonResult;
-    public double spareChangeValue;
+    private HashMap<String, Coin> coinsCollection = new HashMap<>();
+    private HashMap<String, Marker> markers = new HashMap<>();
+    private ArrayList<String> collectedIDs = new ArrayList<>();
+    private ArrayList<String> bankedIDs = new ArrayList<>();
+    private int bankedCount;
+    private double goldBalance;
+    private HashMap<String, Double> exchangeRates;
+    private String jsonResult;
+    private double spareChangeValue;
 
-    public boolean coinsReady = false;
+    private boolean coinsReady = false;
 
     private MapFragment mapFragment;
 
@@ -70,12 +70,12 @@ public class MainActivity extends AppCompatActivity {
 
     private String currentFragment;
 
-    public int playerMulti;
-    public int playerRadius;
+    private int playerMulti;
+    private int playerRadius;
 
-    public int lifetimeCoins;
-    public double lifetimeGold;
-    public float lifetimeDistance;
+    private int lifetimeCoins;
+    private double lifetimeGold;
+    private float lifetimeDistance;
 
     @Override
     public void onCreate(Bundle savedInstanceState){
@@ -207,14 +207,14 @@ public class MainActivity extends AppCompatActivity {
             downloadMap(todaysDate);
         }
     }
-    public void downloadMap(String date){
+    private void downloadMap(String date){
         String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + date + "/coinzmap.geojson";
         DownloadFileTask downloadMapTask = new DownloadFileTask();
-        downloadMapTask.delegate = (DownloadFileResponse) fragmentManager.findFragmentByTag("mapFragment");
+        downloadMapTask.setDelegate((DownloadFileResponse) fragmentManager.findFragmentByTag("mapFragment"));
         downloadMapTask.execute(downloadString);
     }
 
-    public void parseJson(){
+    private void parseJson(){
         try {
             JSONObject coindatajson = new JSONObject(jsonResult);
 
@@ -252,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
         checkSpareChange();
     }
 
-    public void clearFBWallet(String walletToClear){
+    private void clearFBWallet(String walletToClear){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
         db.collection("/user/" + email + "/" + walletToClear)
@@ -317,6 +317,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
                             for (QueryDocumentSnapshot doc : task.getResult()) {
+                                goldBalance = doc.getDouble("goldBalance");
                                 playerMulti = doc.getLong("multi").intValue();
                                 playerRadius = doc.getLong("radius").intValue();
                                 lifetimeCoins = doc.getLong("lifetimeCoins").intValue();
@@ -327,13 +328,9 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 });
-
-
-
-
     }
 
-    public void checkSpareChange(){
+    private void checkSpareChange(){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
         db.collection("/user/" + email + "/SpareChange")
@@ -358,7 +355,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void spawnSCPopup(){
+    private void spawnSCPopup(){
         LayoutInflater inflater = (LayoutInflater)
                 getSystemService(LAYOUT_INFLATER_SERVICE);
         View popupView = inflater.inflate(R.layout.sparechange_popup, null);
@@ -376,10 +373,13 @@ public class MainActivity extends AppCompatActivity {
         spareButton.setOnClickListener(new View.OnClickListener(){
             public void onClick(View v) {
                 goldBalance += spareChangeValue;
+                lifetimeGold += spareChangeValue;
                 spareChangeValue = 0.0;
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
                 String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                db.collection("user").document(email).collection("Bank").document(email).set(new GoldBalance(goldBalance));
+                db.collection("user").document(email).collection("Player").document(email).update("goldBalance", goldBalance);
+                db.collection("user").document(email).collection("Player").document(email).update("lifetimeGold", lifetimeGold);
+
                 clearFBWallet("SpareChange");
 
                 popupWindow.dismiss();
@@ -421,4 +421,97 @@ public class MainActivity extends AppCompatActivity {
             mapFragment.locationEngine.removeLocationUpdates();
         }
     }
+
+
+    public void setTodaysDate(String todaysDate) {
+        this.todaysDate = todaysDate;
+    }
+
+    public HashMap<String, Coin> getCoinsCollection() {
+        return coinsCollection;
+    }
+
+
+    public HashMap<String, Marker> getMarkers() {
+        return markers;
+    }
+
+
+    public ArrayList<String> getCollectedIDs() {
+        return collectedIDs;
+    }
+
+
+    public int getBankedCount() {
+        return bankedCount;
+    }
+
+    public void setBankedCount(int bankedCount) {
+        this.bankedCount = bankedCount;
+    }
+
+    public double getGoldBalance() {
+        return goldBalance;
+    }
+
+    public void setGoldBalance(double goldBalance) {
+        this.goldBalance = goldBalance;
+    }
+
+    public HashMap<String, Double> getExchangeRates() {
+        return exchangeRates;
+    }
+
+    public void setJsonResult(String jsonResult) {
+        this.jsonResult = jsonResult;
+    }
+
+    public boolean isCoinsReady() {
+        return coinsReady;
+    }
+
+    public void setCoinsReady(boolean coinsReady) {
+        this.coinsReady = coinsReady;
+    }
+
+    public int getPlayerMulti() {
+        return playerMulti;
+    }
+
+    public void setPlayerMulti(int playerMulti) {
+        this.playerMulti = playerMulti;
+    }
+
+    public int getPlayerRadius() {
+        return playerRadius;
+    }
+
+    public void setPlayerRadius(int playerRadius) {
+        this.playerRadius = playerRadius;
+    }
+
+    public int getLifetimeCoins() {
+        return lifetimeCoins;
+    }
+
+    public void setLifetimeCoins(int lifetimeCoins) {
+        this.lifetimeCoins = lifetimeCoins;
+    }
+
+    public double getLifetimeGold() {
+        return lifetimeGold;
+    }
+
+    public void setLifetimeGold(double lifetimeGold) {
+        this.lifetimeGold = lifetimeGold;
+    }
+
+    public float getLifetimeDistance() {
+        return lifetimeDistance;
+    }
+
+    public void setLifetimeDistance(float lifetimeDistance) {
+        this.lifetimeDistance = lifetimeDistance;
+    }
+
 }

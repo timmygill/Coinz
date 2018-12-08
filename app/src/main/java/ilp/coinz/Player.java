@@ -2,13 +2,16 @@ package ilp.coinz;
 
 public class Player {
 
+    private double goldBalance;
     private int multi;
     private int radius;
     private int lifetimeCoins;
     private double lifetimeGold;
     private float lifetimeDistance;
 
-    public Player(int multi, int radius, int lifetimeCoins, double lifetimeGold, float lifetimeDistance) {
+
+    public Player(double goldBalance, int multi, int radius, int lifetimeCoins, double lifetimeGold, float lifetimeDistance) {
+        this.goldBalance = goldBalance;
         this.multi = multi;
         this.radius = radius;
         this.lifetimeCoins = lifetimeCoins;
@@ -54,6 +57,14 @@ public class Player {
 
     public void setLifetimeDistance(float lifetimeDistance) {
         this.lifetimeDistance = lifetimeDistance;
+    }
+
+    public double getGoldBalance() {
+        return goldBalance;
+    }
+
+    public void setGoldBalance(double goldBalance) {
+        this.goldBalance = goldBalance;
     }
 }
 

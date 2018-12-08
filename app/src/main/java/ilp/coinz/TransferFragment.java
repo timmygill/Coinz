@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -75,16 +74,16 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
                 emailTo = emailInput.getText().toString();
                 if(!TextUtils.isEmpty(emailTo) && Patterns.EMAIL_ADDRESS.matcher(emailTo).matches()){
 
-                    if (activity.bankedCount >= 25 && spinnerItems.get(selectedIndex) != null){
+                    if (activity.getBankedCount() >= 25 && spinnerItems.get(selectedIndex) != null){
                         String id = spinnerItemToTag.get(spinnerItems.get(selectedIndex));
-                        activity.coinsCollection.get(id).setTransferred(true);
+                        activity.getCoinsCollection().get(id).setTransferred(true);
 
                         FirebaseFirestore db = FirebaseFirestore.getInstance();
                         String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
                         //rewrite coin as collected for current user
-                        db.collection("user").document(email).collection("Wallet").document(id).set(activity.coinsCollection.get(id));
+                        db.collection("user").document(email).collection("Wallet").document(id).set(activity.getCoinsCollection().get(id));
                         //add to receiving users spare change collection
-                        db.collection("user").document(emailTo).collection("SpareChange").document(id).set(activity.coinsCollection.get(id));
+                        db.collection("user").document(emailTo).collection("SpareChange").document(id).set(activity.getCoinsCollection().get(id));
 
                         spinnerItems.remove(selectedIndex);
 
@@ -100,9 +99,9 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
             }
         });
 
-        for (String id : activity.collectedIDs) {
-            if (activity.coinsCollection.containsKey(id)) {
-                Coin tempCoin = activity.coinsCollection.get(id);
+        for (String id : activity.getCollectedIDs()) {
+            if (activity.getCoinsCollection().containsKey(id)) {
+                Coin tempCoin = activity.getCoinsCollection().get(id);
                 if(!tempCoin.isBanked() && !tempCoin.isTransferred()) {
                     String item = tempCoin.getCurrency().toString() + " : " + String.format("%.3f", tempCoin.getValue());
                     spinnerItemToTag.put(item, id);
