@@ -74,7 +74,7 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
                 emailTo = emailInput.getText().toString();
                 if(!TextUtils.isEmpty(emailTo) && Patterns.EMAIL_ADDRESS.matcher(emailTo).matches()){
 
-                    if (activity.getBankedCount() >= 25 && spinnerItems.get(selectedIndex) != null){
+                    if (activity.getPlayer().getBankedCount() >= 25 && spinnerItems.get(selectedIndex) != null){
                         String id = spinnerItemToTag.get(spinnerItems.get(selectedIndex));
                         activity.getCoinsCollection().get(id).setTransferred(true);
 

@@ -47,13 +47,13 @@ public class ProfileFragment extends Fragment {
         loggedInAs.setText(prompt);
 
         TextView coinsLabel = (TextView) getView().findViewById(R.id.profileCoins);
-        coinsLabel.setText(getString(R.string.profile_coins) + " " + activity.getLifetimeCoins() + " Coins");
+        coinsLabel.setText(getString(R.string.profile_coins) + " " + activity.getPlayer().getLifetimeCoins() + " Coins");
 
         TextView goldLabel = (TextView) getView().findViewById(R.id.profileGold);
-        goldLabel.setText(getString(R.string.profile_gold) + " " + String.format("%.3f", activity.getLifetimeGold()) + " Gold");
+        goldLabel.setText(getString(R.string.profile_gold) + " " + String.format("%.3f", activity.getPlayer().getLifetimeGold()) + " Gold");
 
         TextView distanceLabel = (TextView) getView().findViewById(R.id.profileDistance);
-        distanceLabel.setText(getString(R.string.profile_distance) + " " + activity.getLifetimeDistance() + "m");
+        distanceLabel.setText(getString(R.string.profile_distance) + " " + activity.getPlayer().getLifetimeDistance() + "m");
 
 
 

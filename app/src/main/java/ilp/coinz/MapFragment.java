@@ -45,7 +45,7 @@ import java.util.Locale;
 import java.util.Objects;
 
 
-public class MapFragment extends Fragment implements PermissionsListener, OnMapReadyCallback, LocationEngineListener, DownloadFileResponse {
+public class MapFragment extends Fragment implements PermissionsListener, OnMapReadyCallback, LocationEngineListener {
 
     final private String tag = "MapFragment";
 
@@ -97,8 +97,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
         activity = (MainActivity) getActivity();
 
-       activity.setTodaysDate(new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime()));
-
         Mapbox.getInstance(getActivity(), getString(R.string.access_token));
 
     }
@@ -146,13 +144,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         enableLocation();
     }
 
-    @Override
-    public void downloadFinish(String result){
-
-        activity.setJsonResult(result);
-        activity.downloadFBWallet();
-
-    }
 
 
     private void enableLocation() {
@@ -215,17 +206,17 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         } else if(activity.isCoinsReady()){
             Log.d(tag, "[onLocationChanged] location is not null, radius: " + collectionRadius);
 
-            collectionRadius = activity.getPlayerRadius();
+            collectionRadius = activity.getPlayer().getRadius();
             setCameraPosition(location);
 
             if (oldLocation != null){
                 float[] distanceMoved  = new float[2];
                 Location.distanceBetween(location.getLatitude(),location.getLongitude(),oldLocation.getLatitude(),oldLocation.getLongitude(),distanceMoved);
-                activity.setLifetimeDistance(activity.getLifetimeDistance() + distanceMoved[0]);
+                activity.getPlayer().setLifetimeDistance(activity.getPlayer().getLifetimeDistance() + distanceMoved[0]);
 
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
                 String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                db.collection("user").document(email).collection("Player").document(email).update("lifetimeDistance", activity.getLifetimeDistance());
+                db.collection("user").document(email).collection("Player").document(email).update("lifetimeDistance", activity.getPlayer().getLifetimeDistance());
             }
 
             oldLocation = location;
@@ -242,12 +233,12 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
                     if (activity.getMarkers().containsKey(c.getId())) { map.removeMarker(activity.getMarkers().get(c.getId())); }
 
-                    activity.setLifetimeCoins(activity.getLifetimeCoins() + 1);
+                    activity.getPlayer().setLifetimeCoins(activity.getPlayer().getLifetimeCoins() + 1);
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
                     db.collection("user").document(email).collection("Wallet").document(c.getId()).set(c);
-                    db.collection("user").document(email).collection("Player").document(email).update("lifetimeCoins", activity.getLifetimeCoins());
+                    db.collection("user").document(email).collection("Player").document(email).update("lifetimeCoins", activity.getPlayer().getLifetimeCoins());
 
                 }
             }
@@ -257,7 +248,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         Log.d(tag, "result received");
-
         permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
@@ -293,7 +283,7 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         for (Coin coin : activity.getCoinsCollection().values()) {
             if (!(activity.getCollectedIDs().contains(coin.getId()))){
                 LatLng pos = new LatLng(coin.getLatitude(), coin.getLongitude());
-                String snip = "VALUE: " + coin.getValue().toString();
+                String snip = "VALUE: " + String.format("%.3f", coin.getValue());
                 String tit = coin.getCurrency();
                 MarkerOptions mo = new MarkerOptions().position(pos).title(tit).snippet(snip).icon(icon);
                 try {
@@ -323,8 +313,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     @Override
     public void onResume() {
         super.onResume();
-        enableLocation();
-        mapView.onResume();
     }
 
     @Override

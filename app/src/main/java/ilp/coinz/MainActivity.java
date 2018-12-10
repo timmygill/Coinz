@@ -1,5 +1,6 @@
 package ilp.coinz;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -39,30 +40,38 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Objects;
 
-public class MainActivity extends AppCompatActivity {
+
+public class MainActivity extends AppCompatActivity implements DownloadFileResponse {
 
     final String tag = "MainActivity";
 
     private String todaysDate = ""; //YYYY/MM/DD
-    private String downloadDate = ""; //YYYY/MM/DD
-    private final String preferencesFile = "MyPrefsFile";
+
+    private Player player;
 
     private HashMap<String, Coin> coinsCollection = new HashMap<>();
     private HashMap<String, Marker> markers = new HashMap<>();
     private ArrayList<String> collectedIDs = new ArrayList<>();
     private ArrayList<String> bankedIDs = new ArrayList<>();
-    private int bankedCount;
-    private double goldBalance;
     private HashMap<String, Double> exchangeRates;
     private String jsonResult;
+
     private double spareChangeValue;
+    private double loginReward;
 
     private boolean coinsReady = false;
+    private boolean navBarReady = false;
+
+    BottomNavigationView navigation;
+
 
     private MapFragment mapFragment;
 
@@ -70,41 +79,68 @@ public class MainActivity extends AppCompatActivity {
 
     private String currentFragment;
 
-    private int playerMulti;
-    private int playerRadius;
-
-    private int lifetimeCoins;
-    private double lifetimeGold;
-    private float lifetimeDistance;
-
     @Override
-    public void onCreate(Bundle savedInstanceState){
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         FirebaseAuth mAuth;
         mAuth = FirebaseAuth.getInstance();
 
+        player = new Player();
+
+        //if user has not autheticated, take to login activity, else set local player instance from Firebase
         FirebaseUser currentUser = mAuth.getCurrentUser();
-        if(currentUser == null){
+        if (currentUser == null) {
             startActivity(new Intent(this, LoginActivity.class));
+            Log.d(tag, "No user currently logged in");
+            finish();
+        } else {
+
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            player.setEmail(currentUser.getEmail());
+            db.collection("/user/" + player.getEmail() + "/Player")
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot doc : Objects.requireNonNull(task.getResult())) {
+                                player.setGoldBalance(doc.getDouble("goldBalance"));
+                                player.setLastLogin(doc.getString("lastLogin"));
+                                player.setConsecLogins(doc.getLong("consecLogins").intValue());
+                                player.setBankedCount(doc.getLong("bankedCount").intValue());
+                                player.setLifetimeCoins(doc.getLong("lifetimeCoins").intValue());
+                                player.setLifetimeGold(doc.getDouble("lifetimeGold"));
+                                player.setLifetimeDistance(doc.getDouble("lifetimeDistance").floatValue());
+                                player.setMulti(doc.getLong("multi").intValue());
+                                player.setRadius(doc.getLong("radius").intValue());
+                            }
+
+                            initiateMapFragment();
+
+                        } else {
+                            Log.d(tag, "Error getting documents: ", task.getException());
+                        }
+                    });
+
         }
 
+        //initialise interface
         setContentView(R.layout.activity_main);
+        navigation = findViewById(R.id.bottomNavigationView);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
+
+        spareChangeValue = 0.0;
+        loginReward = 0.0;
+
+        todaysDate = new SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()).format(Calendar.getInstance().getTime());
+
+
+    }
+
+    public void initiateMapFragment(){
+
         Mapbox.getInstance(this, getString(R.string.access_token));
 
-        bankedCount = 0;
-        goldBalance = 0.0;
-        spareChangeValue = 0.0;
-
-        playerMulti = 1;
-        playerRadius = 25;
-
-        lifetimeCoins = 0;
-        lifetimeGold = 0.0;
-        lifetimeDistance = 0;
-
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-
 
         //Make map fragment, shown by default
         MapboxMapOptions options = new MapboxMapOptions()
@@ -119,51 +155,53 @@ public class MainActivity extends AppCompatActivity {
         transaction.commit();
         currentFragment = "mapFragment";
 
-
-        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.bottomNavigationView);
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
-
+        navBarReady = true;
     }
 
 
-    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-            = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
-        @Override
-        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-            Fragment fragment;
-            switch (item.getItemId()) {
-                case R.id.navigation_map:
-                    loadFragment(mapFragment, "mapFragment");
-                    Log.d(tag, "map");
-                    return true;
-                case R.id.navigation_bank:
-                    if(bankedCount < 25) {
-                        fragment = new BankFragment();
-                    } else {
-                        fragment = new TransferFragment();
+        private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+                = new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                //navbar locked until relevant variables populated to prevent unwanted behaviour
+                if (navBarReady) {
+                    Fragment fragment;
+                    switch (item.getItemId()) {
+                        case R.id.navigation_map:
+                            loadFragment(mapFragment, "mapFragment");
+                            Log.d(tag, "map");
+                            return true;
+                        case R.id.navigation_bank:
+                            //show bank or transfer fragment, dependent on banking cap being reached
+                            if (player.getBankedCount() < 25) {
+                                fragment = new BankFragment();
+                            } else {
+                                fragment = new TransferFragment();
+                            }
+                            loadFragment(fragment, "bankFragment");
+                            Log.d(tag, "bank");
+                            return true;
+                        case R.id.navigation_shop:
+                            fragment = new ShopFragment();
+                            loadFragment(fragment, "shopFragment");
+                            Log.d(tag, "shop");
+                            return true;
+                        case R.id.navigation_profile:
+                            fragment = new ProfileFragment();
+                            loadFragment(fragment, "profileFragment");
+                            Log.d(tag, "profile");
+                            return true;
                     }
-                    loadFragment(fragment, "bankFragment");
-                    Log.d(tag, "bank");
-                    return true;
-                case R.id.navigation_shop:
-                    fragment = new ShopFragment();
-                    loadFragment(fragment, "shopFragment");
-                    Log.d(tag, "shop");
-                    return true;
-                case R.id.navigation_profile:
-                    fragment = new ProfileFragment();
-                    loadFragment(fragment, "profileFragment");
-                    Log.d(tag, "profile");
-                    return true;
+                }
+                return false;
             }
-            return false;
-        }
-    };
+        };
 
 
     private void loadFragment(Fragment fragment, String tag) {
-        // load fragment
+        // load fragment - if switching from map, just hide instead of destroy
         if (!tag.equals(currentFragment)) {
             if (currentFragment.equals("mapFragment")) {
                 FragmentTransaction transaction = fragmentManager.beginTransaction();
@@ -173,8 +211,8 @@ public class MainActivity extends AppCompatActivity {
                 transaction.commit();
             } else {
                 FragmentTransaction transaction = fragmentManager.beginTransaction();
-                Fragment old = fragmentManager.findFragmentByTag(currentFragment);
-                transaction.detach(old);
+                Fragment old = fragmentManager. findFragmentByTag(currentFragment);
+                transaction.detach(Objects.requireNonNull(old));
                 if (tag.equals("mapFragment")) {
                     transaction.show(mapFragment);
                 } else {
@@ -187,35 +225,95 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //Download todays coin map and update preferences
-    public void downloadTodaysMap(){
+    public void downloadTodaysMap() {
 
-        //Restore preferences
-        SharedPreferences settings = getSharedPreferences(preferencesFile, Context.MODE_PRIVATE);
-        downloadDate = settings.getString("lastDownloadDate", "");
-        Log.d(tag, "[onStart] Recalled lastDownloadDate is '" + downloadDate + "'");
+        Log.d(tag, "Player last launched app on " + player.getLastLogin());
 
-        //On new map, delete old coins from Firebase and update most recent map date.
-        if (!(todaysDate.equals(downloadDate))) {
+        //On new day, delete old coins from Firebase and update most recent map date, calculate user login reward.
+        if (!(todaysDate.equals(player.getLastLogin()))) {
+
+            Log.d(tag, "First login today");
+
+            player.setLastLogin(todaysDate);
+            player.setConsecLogins(player.getConsecLogins() + 1);
+            loginReward = player.getConsecLogins() * 100;
+
+            //call downloadmap after clearing wallet
             clearFBWallet("Wallet");
 
-            downloadDate = todaysDate;
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            db.collection("user").document(player.getEmail()).collection("Player").document(player.getEmail()).set(player);
 
-            SharedPreferences.Editor editor = settings.edit();
-            editor.putString("lastDownloadDate", downloadDate);
-            editor.commit();
-        } else {
+        } else { //simply download coins again
+            Log.d(tag, "Already logged in today");
             downloadMap(todaysDate);
         }
     }
+
+
+    //Remove all entries from a coin collection on Firebase
+    private void clearFBWallet(String walletToClear){
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("/user/" + player.getEmail() + "/" + walletToClear)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if(task.isSuccessful()){
+                        for(QueryDocumentSnapshot doc : Objects.requireNonNull(task.getResult())){
+                            doc.getReference().delete();
+                        }
+                        downloadMap(todaysDate);
+                    } else {
+                        Log.d(tag, "Error getting documents: ", task.getException());
+                    }
+                });
+
+    }
+
+
+
     private void downloadMap(String date){
         String downloadString = "https://homepages.inf.ed.ac.uk/stg/coinz/" + date + "/coinzmap.geojson";
         DownloadFileTask downloadMapTask = new DownloadFileTask();
-        downloadMapTask.setDelegate((DownloadFileResponse) fragmentManager.findFragmentByTag("mapFragment"));
+        downloadMapTask.setDelegate(this);
         downloadMapTask.execute(downloadString);
     }
 
+    @Override
+    public void downloadFinish(String result){
+
+        this.jsonResult = result;
+        downloadFBWallet();
+
+    }
+
+    //download players collected coins for today
+    public void downloadFBWallet(){
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("/user/" + player.getEmail() + "/Wallet")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot doc : Objects.requireNonNull(task.getResult())) {
+                            if(doc.getBoolean("banked")){
+                                //create collection of coins marked as banked
+                                bankedIDs.add(Objects.requireNonNull(doc.get("id")).toString());
+                            }
+                            //all coins present must have been collected
+                            collectedIDs.add(Objects.requireNonNull(doc.get("id")).toString());
+                        }
+                        parseJson();
+                    } else {
+                        Log.d(tag, "Error getting documents: ", task.getException());
+                    }
+
+                });
+    }
+
+
     private void parseJson(){
+
         try {
+            //iterate over currencies, store mapping to rates
             JSONObject coindatajson = new JSONObject(jsonResult);
 
             exchangeRates = new HashMap<>();
@@ -231,17 +329,20 @@ public class MainActivity extends AppCompatActivity {
 
             }
 
+            //iterate over coins and create map from id to Coin object
             JSONArray coinsjson = coindatajson.getJSONArray("features");
             for (int i = 0; i < coinsjson.length(); i++) {
                 Coin tempCoin = new Coin(coinsjson.getJSONObject(i));
                 coinsCollection.put(tempCoin.getId(), tempCoin);
             }
 
+            //set banked based on Firebase
             for (String id : bankedIDs){
-                if(coinsCollection.containsKey(id)){ coinsCollection.get(id).setBanked(true); }
+                if(coinsCollection.containsKey(id)){ Objects.requireNonNull(coinsCollection.get(id)).setBanked(true); }
             }
+            //set collected based on Firebase
             for (String id : collectedIDs){
-                if(coinsCollection.containsKey(id)){ coinsCollection.get(id).setCollected(true); }
+                if(coinsCollection.containsKey(id)){ Objects.requireNonNull(coinsCollection.get(id)).setCollected(true); }
             }
 
 
@@ -252,109 +353,34 @@ public class MainActivity extends AppCompatActivity {
         checkSpareChange();
     }
 
-    private void clearFBWallet(String walletToClear){
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-        db.collection("/user/" + email + "/" + walletToClear)
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if(task.isSuccessful()){
-                            for(QueryDocumentSnapshot doc : task.getResult()){
-                                doc.getReference().delete();
-                            }
-                            downloadMap(todaysDate);
-                        } else {
-                            Log.d(tag, "Error getting documents: ", task.getException());
-                        }
-                    }
-                });
-
-    }
-
-    public void downloadFBWallet(){
-
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-        db.collection("/user/" + email + "/Wallet")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot doc : task.getResult()) {
-                                if(doc.getBoolean("banked")){
-                                    bankedCount += 1;
-                                    bankedIDs.add(doc.get("id").toString());
-                                }
-                                collectedIDs.add(doc.get("id").toString());
-                            }
-                            parseJson();
-                        } else {
-                            Log.d(tag, "Error getting documents: ", task.getException());
-                        }
-
-                    }
-                });
-        db.collection("/user/" + email + "/Bank")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot doc : task.getResult()) {
-                                goldBalance = doc.getDouble("balance");
-                            }
-                        }
-                    }
-                });
-
-        db.collection("/user/" + email + "/Player")
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot doc : task.getResult()) {
-                                goldBalance = doc.getDouble("goldBalance");
-                                playerMulti = doc.getLong("multi").intValue();
-                                playerRadius = doc.getLong("radius").intValue();
-                                lifetimeCoins = doc.getLong("lifetimeCoins").intValue();
-                                lifetimeGold = doc.getDouble("lifetimeGold");
-                                lifetimeDistance = doc.getDouble("lifetimeDistance").floatValue();
-                                Log.d(tag, "multi: " + playerMulti + " radius: " + playerRadius);
-                            }
-                        }
-                    }
-                });
-    }
-
+    //check if user has been transferred coins since last launch of app
     private void checkSpareChange(){
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-        db.collection("/user/" + email + "/SpareChange")
+        db.collection("/user/" + player.getEmail() + "/SpareChange")
                 .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            for (QueryDocumentSnapshot doc : task.getResult()) {
-                                Double value = doc.getDouble("value");
-                                String currency = doc.getString("currency");
-                                spareChangeValue += value * exchangeRates.get(currency);
-                                Log.d(tag, spareChangeValue + "");
-                            }
-                            if (spareChangeValue > 0.0){
-                                spawnSCPopup();
-                                Log.d(tag, "spawn sc");
-                            }
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        //calculate value of coins earned
+                        for (QueryDocumentSnapshot doc : Objects.requireNonNull(task.getResult())) {
+                            Double value = doc.getDouble("value");
+                            String currency = doc.getString("currency");
+                            spareChangeValue += value * exchangeRates.get(currency);
+                            Log.d(tag, spareChangeValue + "");
+                        }
+                        if (spareChangeValue > 0.0){
+                            //give user option to convert
+                            spawnSCPopup();
+                            Log.d(tag, "Spawning spare change popup");
+                        } else if (loginReward > 0.0){
+                            //if user has login reward waiting, give popup
+                            spawnRewardPopup();
                         }
                     }
                 });
 
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private void spawnSCPopup(){
         LayoutInflater inflater = (LayoutInflater)
                 getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -363,107 +389,105 @@ public class MainActivity extends AppCompatActivity {
         // create the popup window
         int width = LinearLayout.LayoutParams.WRAP_CONTENT;
         int height = LinearLayout.LayoutParams.WRAP_CONTENT;
-        boolean focusable = true; // lets taps outside the popup also dismiss it
-        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, true);
 
         TextView spareLabel = popupView.findViewById(R.id.spareValue);
         spareLabel.setText(String.format("%.3f", spareChangeValue ) + " Gold");
 
         Button spareButton = popupView.findViewById(R.id.spareButton);
-        spareButton.setOnClickListener(new View.OnClickListener(){
-            public void onClick(View v) {
-                goldBalance += spareChangeValue;
-                lifetimeGold += spareChangeValue;
-                spareChangeValue = 0.0;
-                FirebaseFirestore db = FirebaseFirestore.getInstance();
-                String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                db.collection("user").document(email).collection("Player").document(email).update("goldBalance", goldBalance);
-                db.collection("user").document(email).collection("Player").document(email).update("lifetimeGold", lifetimeGold);
+        spareButton.setOnClickListener(v -> {
+            player.setGoldBalance(player.getGoldBalance() + spareChangeValue);
+            player.setLifetimeGold(player.getLifetimeGold() + spareChangeValue);;
+            spareChangeValue = 0.0;
 
-                clearFBWallet("SpareChange");
+            FirebaseFirestore db = FirebaseFirestore.getInstance();
+            db.collection("user").document(player.getEmail()).collection("Player").document(player.getEmail()).set(player);
 
-                popupWindow.dismiss();
+            clearFBWallet("SpareChange");
 
-            }
+            popupWindow.dismiss();
+
+            //check if reward is waiting
+            if(loginReward > 0.0){ spawnRewardPopup(); }
+
         });
 
         // show the popup window
-        // which view you pass in doesn't matter, it is only used for the window tolken
         popupWindow.showAtLocation(popupView, Gravity.CENTER, 0, 0);
 
         // dismiss the popup window when touched
-        popupView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                popupWindow.dismiss();
-                return true;
-            }
+        popupView.setOnTouchListener((v, event) -> {
+            popupWindow.dismiss();
+            if(loginReward > 0.0){ spawnRewardPopup(); }
+            return true;
+        });
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void spawnRewardPopup(){
+
+        LayoutInflater inflater = (LayoutInflater)
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.reward_popup, null);
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, true);
+
+        TextView rewardValue = popupView.findViewById(R.id.rewardValue);
+        rewardValue.setText(player.getConsecLogins() + " days = " + loginReward + " Gold");
+
+        player.setGoldBalance(player.getGoldBalance() + loginReward);
+        player.setLifetimeGold(player.getLifetimeGold() + loginReward);
+        loginReward = 0.0;
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("user").document(player.getEmail()).collection("Player").document(player.getEmail()).set(player);
+
+        Button spareButton = popupView.findViewById(R.id.rewardButton);
+        spareButton.setOnClickListener(v -> {
+            popupWindow.dismiss();
+
+        });
+
+        // show the popup window
+        popupWindow.showAtLocation(popupView, Gravity.CENTER, 0, 0);
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener((v, event) -> {
+
+            popupWindow.dismiss();
+
+            return true;
         });
     }
 
 
-    @Override
-    public void onStart(){
-        super.onStart();
-        if(mapFragment.locationEngine != null){
-            try {
-                mapFragment.locationEngine.requestLocationUpdates();
-            } catch(SecurityException ignored) {}
-            mapFragment.locationEngine.addLocationEngineListener(mapFragment);
-        }
-    }
-
-    @Override
-    public void onStop(){
-        super.onStop();
-        if(mapFragment.locationEngine != null) {
-            mapFragment.locationEngine.removeLocationEngineListener(mapFragment);
-            mapFragment.locationEngine.removeLocationUpdates();
-        }
-    }
+@Override
+public void onPause(){
+        super.onPause();
+}
 
 
-    public void setTodaysDate(String todaysDate) {
-        this.todaysDate = todaysDate;
+    public Player getPlayer() {
+        return player;
     }
 
     public HashMap<String, Coin> getCoinsCollection() {
         return coinsCollection;
     }
 
-
     public HashMap<String, Marker> getMarkers() {
         return markers;
     }
-
 
     public ArrayList<String> getCollectedIDs() {
         return collectedIDs;
     }
 
-
-    public int getBankedCount() {
-        return bankedCount;
-    }
-
-    public void setBankedCount(int bankedCount) {
-        this.bankedCount = bankedCount;
-    }
-
-    public double getGoldBalance() {
-        return goldBalance;
-    }
-
-    public void setGoldBalance(double goldBalance) {
-        this.goldBalance = goldBalance;
-    }
-
     public HashMap<String, Double> getExchangeRates() {
         return exchangeRates;
-    }
-
-    public void setJsonResult(String jsonResult) {
-        this.jsonResult = jsonResult;
     }
 
     public boolean isCoinsReady() {
@@ -474,44 +498,5 @@ public class MainActivity extends AppCompatActivity {
         this.coinsReady = coinsReady;
     }
 
-    public int getPlayerMulti() {
-        return playerMulti;
-    }
-
-    public void setPlayerMulti(int playerMulti) {
-        this.playerMulti = playerMulti;
-    }
-
-    public int getPlayerRadius() {
-        return playerRadius;
-    }
-
-    public void setPlayerRadius(int playerRadius) {
-        this.playerRadius = playerRadius;
-    }
-
-    public int getLifetimeCoins() {
-        return lifetimeCoins;
-    }
-
-    public void setLifetimeCoins(int lifetimeCoins) {
-        this.lifetimeCoins = lifetimeCoins;
-    }
-
-    public double getLifetimeGold() {
-        return lifetimeGold;
-    }
-
-    public void setLifetimeGold(double lifetimeGold) {
-        this.lifetimeGold = lifetimeGold;
-    }
-
-    public float getLifetimeDistance() {
-        return lifetimeDistance;
-    }
-
-    public void setLifetimeDistance(float lifetimeDistance) {
-        this.lifetimeDistance = lifetimeDistance;
-    }
 
 }

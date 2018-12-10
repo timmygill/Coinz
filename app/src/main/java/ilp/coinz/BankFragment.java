@@ -64,9 +64,9 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
         spinnerItemToTag = new HashMap<>();
 
         bankValue = Objects.requireNonNull(getView()).findViewById(R.id.balanceValue);
-        bankValue.setText(String.format("%.3f", activity.getGoldBalance()) + " Gold");
+        bankValue.setText(String.format("%.3f", activity.getPlayer().getGoldBalance()) + " Gold");
         countValue = getView().findViewById(R.id.countValue);
-        countValue.setText(activity.getBankedCount() + "/25");
+        countValue.setText(activity.getPlayer().getBankedCount() + "/25");
 
         spinner = getView().findViewById(R.id.spinner);
         spinner.setOnItemSelectedListener(this);
@@ -74,27 +74,26 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
         Button button = getView().findViewById(R.id.bankButton);
         button.setOnClickListener(v -> {
             if (spinnerItems.size() > 0 && selectedIndex < spinnerItems.size()) {
-                if (activity.getBankedCount() < 25 && spinnerItems.get(selectedIndex) != null) {
+                if (activity.getPlayer().getBankedCount() < 25 && spinnerItems.get(selectedIndex) != null) {
                     String id = spinnerItemToTag.get(spinnerItems.get(selectedIndex));
                     Objects.requireNonNull(activity.getCoinsCollection().get(id)).setBanked(true);
 
-                    activity.setBankedCount(activity.getBankedCount() + 1);
-                    countValue.setText(activity.getBankedCount() + "/25");
+                    activity.getPlayer().setBankedCount(activity.getPlayer().getBankedCount() + 1);
+                    countValue.setText(activity.getPlayer().getBankedCount() + "/25");
 
                     Coin tempCoin = activity.getCoinsCollection().get(id);
                     assert tempCoin != null;
-                    Double value = activity.getPlayerMulti() * tempCoin.getValue() * activity.getExchangeRates().get(tempCoin.getCurrency());
-                    activity.setGoldBalance(activity.getGoldBalance() + value);
-                    activity.setLifetimeGold( activity.getLifetimeGold() + value);
+                    Double value = activity.getPlayer().getMulti() * tempCoin.getValue() * activity.getExchangeRates().get(tempCoin.getCurrency());
+                    activity.getPlayer().setGoldBalance(activity.getPlayer().getGoldBalance() + value);
+                    activity.getPlayer().setLifetimeGold( activity.getPlayer().getLifetimeGold() + value);
 
-                    bankValue.setText(activity.getGoldBalance()+ " Gold");
+                    bankValue.setText(activity.getPlayer().getGoldBalance()+ " Gold");
 
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     String email = Objects.requireNonNull(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getEmail());
                     db.collection("user").document(email).collection("Wallet").document(Objects.requireNonNull(id)).set(Objects.requireNonNull(activity.getCoinsCollection().get(id)));
-                    db.collection("user").document(email).collection("Player").document(email).update("goldBalance", activity.getGoldBalance());
-                    db.collection("user").document(email).collection("Player").document(email).update("lifetimeGold", activity.getLifetimeGold());
+                    db.collection("user").document(email).collection("Player").document(email).set(activity.getPlayer());
 
 
                     spinnerItems.remove(selectedIndex);
