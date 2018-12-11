@@ -57,6 +57,7 @@
     <string name="transfer_coin_prompt">Select a coin to send:</string>
     <string name="transfer_button">Transfer</string>
     <string name="transfer_invalid_email">That email does not seem to be valid.</string>
+    <string name="transfer_not_self">You cannot transfer coins to yourself.</string>
 
     //SpareChange
     <string name="spare_label">Since you last played, you have received Spare Change worth:</string>
