@@ -3,6 +3,7 @@ package ilp.coinz;
 
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
+import android.support.design.widget.TextInputEditText;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.util.Patterns;
@@ -34,7 +35,7 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
     ArrayList<String> spinnerItems;
 
     String emailTo;
-    EditText emailInput;
+    TextInputEditText emailInput;
     Spinner spinner;
 
     public TransferFragment() {
@@ -61,47 +62,44 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
         spinnerItems = new ArrayList<>();
         spinnerItemToTag = new HashMap<>();
 
-        spinner = (Spinner) getView().findViewById(R.id.transferSpinner);
+        spinner = getView().findViewById(R.id.transferSpinner);
         spinner.setOnItemSelectedListener(this);
 
-        emailInput = (EditText) getView().findViewById(R.id.transferEmail);
+        emailInput = getView().findViewById(R.id.transferEmail);
 
 
-        Button button = (Button) getView().findViewById(R.id.transferButton);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                emailTo = emailInput.getText().toString();
-                if(!emailTo.equals(activity.getPlayer().getEmail())) {
+        Button button = getView().findViewById(R.id.transferButton);
+        button.setOnClickListener(v -> {
+            emailTo = emailInput.getText().toString();
+            if(!emailTo.equals(activity.getPlayer().getEmail())) {
 
-                    if (!TextUtils.isEmpty(emailTo) && Patterns.EMAIL_ADDRESS.matcher(emailTo).matches()) {
+                if (!TextUtils.isEmpty(emailTo) && Patterns.EMAIL_ADDRESS.matcher(emailTo).matches()) {
 
-                        if (activity.getPlayer().getBankedCount() >= 25 && spinnerItems.get(selectedIndex) != null) {
-                            String id = spinnerItemToTag.get(spinnerItems.get(selectedIndex));
-                            activity.getCoinsCollection().get(id).setTransferred(true);
+                    if (activity.getPlayer().getBankedCount() >= 25 && spinnerItems.get(selectedIndex) != null) {
+                        String id = spinnerItemToTag.get(spinnerItems.get(selectedIndex));
+                        activity.getCoinsCollection().get(id).setTransferred(true);
 
-                            FirebaseFirestore db = FirebaseFirestore.getInstance();
-                            String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                            //rewrite coin as collected for current user
-                            db.collection("user").document(email).collection("Wallet").document(id).set(activity.getCoinsCollection().get(id));
-                            //add to receiving users spare change collection
-                            db.collection("user").document(emailTo).collection("SpareChange").document(id).set(activity.getCoinsCollection().get(id));
+                        FirebaseFirestore db = FirebaseFirestore.getInstance();
+                        String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                        //rewrite coin as collected for current user
+                        db.collection("user").document(email).collection("Wallet").document(id).set(activity.getCoinsCollection().get(id));
+                        //add to receiving users spare change collection
+                        db.collection("user").document(emailTo).collection("SpareChange").document(id).set(activity.getCoinsCollection().get(id));
 
-                            spinnerItems.remove(selectedIndex);
+                        spinnerItems.remove(selectedIndex);
 
-                            ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.spinner_item, spinnerItems);
-                            spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                        ArrayAdapter<String> spinnerArrayAdapter = new ArrayAdapter<String>(getActivity(), R.layout.spinner_item, spinnerItems);
+                        spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-                            spinner.setAdapter(spinnerArrayAdapter);
-                        }
-
-                    } else {
-                        Snackbar.make(getView(), R.string.transfer_invalid_email, Snackbar.LENGTH_LONG);
+                        spinner.setAdapter(spinnerArrayAdapter);
                     }
 
-                    } else {
-                    Snackbar.make(getView(), R.string.transfer_not_self, Snackbar.LENGTH_LONG);
+                } else {
+                    Snackbar.make(getView(), R.string.transfer_invalid_email, Snackbar.LENGTH_LONG);
                 }
+
+                } else {
+                Snackbar.make(getView(), R.string.transfer_not_self, Snackbar.LENGTH_LONG);
             }
         });
 
