@@ -120,7 +120,7 @@ public class LoginActivity extends AppCompatActivity {
 
                             FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-                            Player player = new Player(email,0, "", 1,0, 1, 25, 0, 0, 0);
+                            Player player = new Player(email, 0, "", 0, 0, 1, 25, 0, 0, 0);
 
                             db.collection("user").document(email).collection("Player").document(email).set(player);
 
