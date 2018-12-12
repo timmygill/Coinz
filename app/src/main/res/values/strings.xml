@@ -37,6 +37,7 @@
 
     //Map
     <string name="map_perm_explain">Your location is needed to play Coins.</string>
+    <string name="map_json_error">Could not download map. Check your internet connection and try again.</string>
 
     //Bottom Nav
     <string name="title_map">Map</string>

@@ -34,9 +34,6 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
     private ArrayList<String> spinnerItems;
     private Spinner spinner;
 
-    private TextView bankValue;
-    private TextView countValue;
-
     public BankFragment() {
 
     }
@@ -59,14 +56,11 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState){
 
+        updateText();
 
         spinnerItems = new ArrayList<>();
         spinnerItemToTag = new HashMap<>();
 
-        bankValue = Objects.requireNonNull(getView()).findViewById(R.id.balanceValue);
-        bankValue.setText(String.format("%.3f", activity.getPlayer().getGoldBalance()) + " Gold");
-        countValue = getView().findViewById(R.id.countValue);
-        countValue.setText(activity.getPlayer().getBankedCount() + "/25");
 
         spinner = getView().findViewById(R.id.spinner);
         spinner.setOnItemSelectedListener(this);
@@ -79,7 +73,6 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                     Objects.requireNonNull(activity.getCoinsCollection().get(id)).setBanked(true);
 
                     activity.getPlayer().setBankedCount(activity.getPlayer().getBankedCount() + 1);
-                    countValue.setText(activity.getPlayer().getBankedCount() + "/25");
 
                     Coin tempCoin = activity.getCoinsCollection().get(id);
                     assert tempCoin != null;
@@ -87,7 +80,7 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                     activity.getPlayer().setGoldBalance(activity.getPlayer().getGoldBalance() + value);
                     activity.getPlayer().setLifetimeGold( activity.getPlayer().getLifetimeGold() + value);
 
-                    bankValue.setText(activity.getPlayer().getGoldBalance()+ " Gold");
+                    updateText();
 
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -115,14 +108,12 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
 
 
         for (String id : activity.getCollectedIDs()){
-            Log.d("bank", id);
             if (activity.getCoinsCollection().containsKey(id)) {
                 Coin tempCoin = activity.getCoinsCollection().get(id);
                 assert tempCoin != null;
                 if(!tempCoin.isBanked()) {
                     String item = tempCoin.getCurrency() + " : " + String.format("%.3f", tempCoin.getValue());
                     spinnerItemToTag.put(item, id);
-                    Log.d("bank", item);
                     spinnerItems.add(item);
                 }
             }
@@ -131,6 +122,14 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
         spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         spinner.setAdapter(spinnerArrayAdapter);
+    }
+
+    @SuppressLint({"SetTextI18n", "DefaultLocale"})
+    private void updateText(){
+        TextView bankValue = Objects.requireNonNull(getView()).findViewById(R.id.balanceValue);
+        bankValue.setText(String.format("%.3f", activity.getPlayer().getGoldBalance()) + " Gold");
+        TextView countValue = getView().findViewById(R.id.countValue);
+        countValue.setText(activity.getPlayer().getBankedCount() + "/25");
     }
 
     @Override

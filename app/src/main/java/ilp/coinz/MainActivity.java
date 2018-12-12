@@ -1,10 +1,12 @@
 package ilp.coinz;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -56,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
     private ArrayList<String> collectedIDs = new ArrayList<>();
     private ArrayList<String> bankedIDs = new ArrayList<>();
     private HashMap<String, Double> exchangeRates;
+
     private String jsonResult;
 
     private double spareChangeValue;
@@ -63,9 +66,9 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
     private boolean coinsReady = false;
     private boolean navBarReady = false;
+    private boolean locationGranted = false;
 
     BottomNavigationView navigation;
-
 
     private MapFragment mapFragment;
 
@@ -73,10 +76,16 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
     private String currentFragment;
 
+    private final int REQUEST_LOCATION = 1111;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        //ask for android location permissions
+        requestLocation();
+
+        //get user
         FirebaseAuth mAuth;
         mAuth = FirebaseAuth.getInstance();
 
@@ -316,9 +325,8 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
             while(currencies.hasNext()) {
                 String currency = currencies.next();
-                Log.d(tag, currency);
                 exchangeRates.put(currency, exchanges.getDouble(currency));
-                Log.d(tag, exchanges.getDouble(currency) + "");
+                Log.d(tag, currency + ": " + exchanges.getDouble(currency) + "");
 
             }
 
@@ -341,6 +349,8 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
         } catch (JSONException e){
             Log.d(tag, e.toString());
+            mapFragment.displayJsonError();
+
         }
         mapFragment.addCoinsToMap();
         checkSpareChange();
@@ -456,12 +466,34 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
         });
     }
 
+    public void requestLocation(){
+        requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION );
+    }
 
-@Override
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        if(requestCode == REQUEST_LOCATION && permissions.length > 0){
+            Log.d(tag, "Callback: Permissions granted");
+            locationGranted = true;
+        } else {
+            Log.d(tag, "Callback: Permissions not granted");
+            //TODO: snackbar
+             requestLocation();
+
+        }
+    }
+
+
+
+    @Override
 public void onPause(){
         super.onPause();
 }
 
+    public boolean isLocationGranted() {
+        return locationGranted;
+    }
 
     public Player getPlayer() {
         return player;

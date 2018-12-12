@@ -1,8 +1,10 @@
 package ilp.coinz;
 
 
+import android.Manifest;
 import android.arch.lifecycle.Lifecycle;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -45,18 +47,18 @@ import java.util.Locale;
 import java.util.Objects;
 
 
-public class MapFragment extends Fragment implements PermissionsListener, OnMapReadyCallback, LocationEngineListener {
+public class MapFragment extends Fragment implements OnMapReadyCallback, LocationEngineListener {
 
     final private String tag = "MapFragment";
 
     public MainActivity activity;
+
 
     private MapView mapView;
     private MapboxMap map;
     private final List<OnMapReadyCallback> mapReadyCallbackList = new ArrayList<>();
     private com.mapbox.mapboxsdk.maps.MapFragment.OnMapViewReadyCallback mapViewReadyCallback;
 
-    private PermissionsManager permissionsManager;
     public LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
 
@@ -96,6 +98,8 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         super.onCreate(savedInstanceState);
 
         activity = (MainActivity) getActivity();
+
+
 
         Mapbox.getInstance(getActivity(), getString(R.string.access_token));
 
@@ -146,15 +150,12 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
 
 
-    private void enableLocation() {
-        if (PermissionsManager.areLocationPermissionsGranted(getContext())) {
-            Log.d(tag, "Permissions are granted");
+    public void enableLocation() {
+        if(activity.isLocationGranted()) {
             initializeLocationEngine();
             initializeLocationLayer();
         } else {
-            Log.d(tag, "Permissions are not granted");
-            permissionsManager = new PermissionsManager(this);
-            permissionsManager.requestLocationPermissions(getActivity());
+            activity.requestLocation();
         }
     }
 
@@ -246,12 +247,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        Log.d(tag, "result received");
-        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    }
-
-    @Override
     @SuppressWarnings("MissingPermission")
     public void onConnected(){
         Log.d(tag, "[onConnected] requesting location updates");
@@ -259,23 +254,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         Log.d(tag, "[onConnected] location updates granted");
     }
 
-    @Override
-    public void onExplanationNeeded(List<String> permissionsToExplain){
-        Log.d(tag, "Permissions: " + permissionsToExplain.toString());
-        Snackbar.make(getView(), R.string.map_perm_explain, Snackbar.LENGTH_LONG).show();
-    }
-
-    @Override
-    public void onPermissionResult(boolean granted){
-        Log.d(tag, "[onPermissionResult] granted == " + granted);
-        if(granted){
-            Log.d(tag, "Permission granted, enabling location");
-            enableLocation();
-        } else {
-            //TODO: dialogue with user
-            activity.finish();
-        }
-    }
 
     public void addCoinsToMap() {
         IconFactory iconFactory = IconFactory.getInstance(getContext());
@@ -296,6 +274,15 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
         activity.setCoinsReady(true);
     }
 
+    public void displayJsonError(){
+        Snackbar.make(getView(),R.string.map_json_error, Snackbar.LENGTH_LONG).show();
+        try {
+            Thread.sleep(1000);
+        } catch(InterruptedException e) {
+        }
+        activity.finish();
+    }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -310,10 +297,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
 
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
 
     @Override
     public void onPause() {
@@ -342,12 +325,6 @@ public class MapFragment extends Fragment implements PermissionsListener, OnMapR
     public void onLowMemory() {
         super.onLowMemory();
         mapView.onLowMemory();
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-
     }
 }
 
