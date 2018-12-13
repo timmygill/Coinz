@@ -45,7 +45,7 @@ public class Coin {
     }
     @Override
     public String toString(){
-    return "" + this.currency + String.format("%.3f", this.value);
+    return this.currency + ": " + String.format("%.3f", this.value);
     }
 
     public String getId() {
