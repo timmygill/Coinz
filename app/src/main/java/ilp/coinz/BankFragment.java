@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -84,9 +83,8 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
 
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
-                    String email = Objects.requireNonNull(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getEmail());
-                    db.collection("user").document(email).collection("Wallet").document(Objects.requireNonNull(id)).set(Objects.requireNonNull(activity.getCoinsCollection().get(id)));
-                    db.collection("user").document(email).collection("Player").document(email).set(activity.getPlayer());
+                    db.collection("user").document(activity.getPlayer().getEmail()).collection("Wallet").document(Objects.requireNonNull(id)).set(Objects.requireNonNull(activity.getCoinsCollection().get(id)));
+                    db.collection("user").document(activity.getPlayer().getEmail()).collection("Player").document(activity.getPlayer().getEmail()).set(activity.getPlayer());
 
 
                     spinnerItems.remove(selectedIndex);
@@ -98,6 +96,9 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
 
                 } else {
                     Snackbar.make(getView(), R.string.bank_all_used, Snackbar.LENGTH_LONG).show();
+
+                    Fragment fragment = new TransferFragment();
+                    activity.loadFragment(fragment, "transferFragment");
 
                 }
             } else {

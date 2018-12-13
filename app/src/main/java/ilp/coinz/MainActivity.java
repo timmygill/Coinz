@@ -158,6 +158,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
         transaction.commit();
         currentFragment = "mapFragment";
 
+        //unlock navigation
         navBarReady = true;
     }
 
@@ -174,27 +175,30 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
                     switch (item.getItemId()) {
                         case R.id.navigation_map:
                             loadFragment(mapFragment, "mapFragment");
-                            Log.d(tag, "map");
+                            Log.d(tag, "Switching to map");
                             return true;
                         case R.id.navigation_bank:
                             //show bank or transfer fragment, dependent on banking cap being reached
                             if (player.getBankedCount() < 25) {
                                 fragment = new BankFragment();
+                                loadFragment(fragment, "bankFragment");
+                                Log.d(tag, "Switching to bank");
                             } else {
                                 fragment = new TransferFragment();
+                                loadFragment(fragment, "transferFragment");
+                                Log.d(tag, "Switching to transfer");
                             }
-                            loadFragment(fragment, "bankFragment");
-                            Log.d(tag, "bank");
+
                             return true;
                         case R.id.navigation_shop:
                             fragment = new ShopFragment();
                             loadFragment(fragment, "shopFragment");
-                            Log.d(tag, "shop");
+                            Log.d(tag, "Switching to shop");
                             return true;
                         case R.id.navigation_profile:
                             fragment = new ProfileFragment();
                             loadFragment(fragment, "profileFragment");
-                            Log.d(tag, "profile");
+                            Log.d(tag, "Switching to profile");
                             return true;
                     }
                 }
@@ -203,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
         };
 
 
-    private void loadFragment(Fragment fragment, String tag) {
+    public void loadFragment(Fragment fragment, String tag) {
         // load fragment - if switching from map, just hide instead of destroy
         if (!tag.equals(currentFragment)) {
             if (currentFragment.equals("mapFragment")) {
@@ -231,6 +235,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
     public void downloadTodaysMap() {
 
         Log.d(tag, "Player last launched app on " + player.getLastLogin());
+        Log.d(tag, "Today's date is " + todaysDate);
 
         //On new day, delete old coins from Firebase and update most recent map date, calculate user login reward.
         if (!(todaysDate.equals(player.getLastLogin()))) {
@@ -239,6 +244,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
             player.setLastLogin(todaysDate);
             player.setConsecLogins(player.getConsecLogins() + 1);
+            player.setBankedCount(0);
             loginReward = player.getConsecLogins() * 100;
 
             //call downloadmap after clearing wallet
@@ -478,9 +484,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
             locationGranted = true;
         } else {
             Log.d(tag, "Callback: Permissions not granted");
-            //TODO: snackbar
              requestLocation();
-
         }
     }
 

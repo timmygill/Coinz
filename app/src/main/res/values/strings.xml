@@ -81,7 +81,7 @@
     <string name="shop_maxed">You have already have the highest level of this power up.</string>
 
     //Daily reward
-    <string name="reward_prompt">Daily login reward! Login on consecutive days to increase reward.</string>
+    <string name="reward_prompt">Daily login reward!</string>
     <string name="reward_button">Claim</string>
 
 </resources>

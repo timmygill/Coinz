@@ -24,6 +24,8 @@ import android.view.View;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.Objects;
+
 public class LoginActivity extends AppCompatActivity {
 
     private TextInputEditText inputEmail, inputPassword;
@@ -51,8 +53,8 @@ public class LoginActivity extends AppCompatActivity {
 
         btnSignIn.setOnClickListener(v -> {
 
-            String email = inputEmail.getText().toString().trim();
-            String password = inputPassword.getText().toString().trim();
+            String email = Objects.requireNonNull(inputEmail.getText()).toString().trim();
+            String password = Objects.requireNonNull(inputPassword.getText()).toString().trim();
 
             if (TextUtils.isEmpty(email)) {
                 Snackbar.make(findViewById(R.id.loginLayout), "Enter email!", Snackbar.LENGTH_SHORT).show();
@@ -65,22 +67,17 @@ public class LoginActivity extends AppCompatActivity {
             }
 
             auth.signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
-                        @Override
-                        public void onComplete(@NonNull Task<AuthResult> task) {
-                            if (task.isSuccessful()) {
-                                // Sign in success, update UI with the signed-in user's information
-                                Log.d(tag, "signInWithEmail:success");
-                                FirebaseUser user = auth.getCurrentUser();
+                    .addOnCompleteListener(LoginActivity.this, task -> {
+                        if (task.isSuccessful()) {
+                            Log.d(tag, "Sign in: success");
+                            FirebaseUser user = auth.getCurrentUser();
 
-                                startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                                finish();
+                            startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                            finish();
 
-                            } else {
-                                // If sign in fails, display a message to the user.
-                                Log.w(tag, "signInWithEmail:failure", task.getException());
-                                Snackbar.make(findViewById(R.id.loginLayout), "Authentication failed.", Snackbar.LENGTH_SHORT).show();
-                            }
+                        } else {
+                            Log.d(tag, "Sign in: fail");
+                            Snackbar.make(findViewById(R.id.loginLayout), "Authentication failed.", Snackbar.LENGTH_SHORT).show();
                         }
                     });
         });

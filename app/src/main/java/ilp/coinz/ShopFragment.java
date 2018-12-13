@@ -9,10 +9,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
-
-import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -88,8 +85,7 @@ public class ShopFragment extends Fragment {
                     activity.getPlayer().setMulti(activity.getPlayer().getMulti() + 1);
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
-                    String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                    db.collection("user").document(email).collection("Player").document(email).set(activity.getPlayer());
+                    db.collection("user").document(activity.getPlayer().getEmail()).collection("Player").document(activity.getPlayer().getEmail()).set(activity.getPlayer());
 
                     calculatePrices();
                     updateText();
@@ -109,8 +105,7 @@ public class ShopFragment extends Fragment {
                     activity.getPlayer().setRadius(activity.getPlayer().getRadius() + 1);
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
-                    String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                    db.collection("user").document(email).collection("Player").document(email).set(activity.getPlayer());
+                    db.collection("user").document(activity.getPlayer().getEmail()).collection("Player").document(activity.getPlayer().getEmail()).set(activity.getPlayer());
 
                     calculatePrices();
                     updateText();

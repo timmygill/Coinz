@@ -14,13 +14,11 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import javax.annotation.Nullable;
 
-
 public class ProfileFragment extends Fragment {
 
     public MainActivity activity;
 
     public ProfileFragment() {
-
     }
 
     @Override
@@ -28,9 +26,7 @@ public class ProfileFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         activity = (MainActivity) getActivity();
-
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -42,30 +38,30 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState){
 
-        TextView loggedInAs = (TextView) getView().findViewById(R.id.profileLIA);
-        String prompt = getString(R.string.profile_logged_in_as) + " " + FirebaseAuth.getInstance().getCurrentUser().getEmail();
+        //generates messages with statistics from current player instance
+
+        TextView loggedInAs = getView().findViewById(R.id.profileLIA);
+        String prompt = getString(R.string.profile_logged_in_as) + " " + activity.getPlayer().getEmail();
         loggedInAs.setText(prompt);
 
-        TextView coinsLabel = (TextView) getView().findViewById(R.id.profileCoins);
+        TextView coinsLabel = getView().findViewById(R.id.profileCoins);
         coinsLabel.setText(getString(R.string.profile_coins) + " " + activity.getPlayer().getLifetimeCoins() + " Coins");
 
-        TextView goldLabel = (TextView) getView().findViewById(R.id.profileGold);
+        TextView goldLabel = getView().findViewById(R.id.profileGold);
         goldLabel.setText(getString(R.string.profile_gold) + " " + String.format("%.3f", activity.getPlayer().getLifetimeGold()) + " Gold");
 
-        TextView distanceLabel = (TextView) getView().findViewById(R.id.profileDistance);
+        TextView distanceLabel = getView().findViewById(R.id.profileDistance);
         distanceLabel.setText(getString(R.string.profile_distance) + " " + activity.getPlayer().getLifetimeDistance() + "m");
 
 
 
-        Button button = (Button) getView().findViewById(R.id.profileLOButton);
-        button.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                FirebaseAuth.getInstance().signOut();
-                if(FirebaseAuth.getInstance().getCurrentUser() == null){
-                    startActivity(new Intent(getContext(), LoginActivity.class));
-                }
-
+        Button button = getView().findViewById(R.id.profileLOButton);
+        button.setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+            if(FirebaseAuth.getInstance().getCurrentUser() == null){
+                startActivity(new Intent(getContext(), LoginActivity.class));
             }
+
         });
     }
 

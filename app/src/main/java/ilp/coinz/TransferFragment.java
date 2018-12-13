@@ -95,11 +95,11 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
                     }
 
                 } else {
-                    Snackbar.make(getView(), R.string.transfer_invalid_email, Snackbar.LENGTH_LONG);
+                    Snackbar.make(getView(), R.string.transfer_invalid_email, Snackbar.LENGTH_LONG).show();
                 }
 
                 } else {
-                Snackbar.make(getView(), R.string.transfer_not_self, Snackbar.LENGTH_LONG);
+                Snackbar.make(getView(), R.string.transfer_not_self, Snackbar.LENGTH_LONG).show();
             }
         });
 
@@ -107,7 +107,7 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
             if (activity.getCoinsCollection().containsKey(id)) {
                 Coin tempCoin = activity.getCoinsCollection().get(id);
                 if(!tempCoin.isBanked() && !tempCoin.isTransferred()) {
-                    String item = tempCoin.getCurrency().toString() + " : " + String.format("%.3f", tempCoin.getValue());
+                    String item = tempCoin.getCurrency() + " : " + String.format("%.3f", tempCoin.getValue());
                     spinnerItemToTag.put(item, id);
                     spinnerItems.add(item);
                 }
