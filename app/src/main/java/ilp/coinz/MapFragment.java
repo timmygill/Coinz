@@ -131,6 +131,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         if (mapboxMap == null) {
             Log.d(tag, "[onMapReady] mapboxMap is null");
         } else {
+            Log.d(tag, "[onMapReady] mapboxMap is ready");
             this.map = mapboxMap;
             for (OnMapReadyCallback onMapReadyCallback : mapReadyCallbackList) {
                 onMapReadyCallback.onMapReady(mapboxMap);
@@ -169,9 +170,9 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         locationEngine.setPriority(LocationEnginePriority.HIGH_ACCURACY);
         locationEngine.activate();
 
-        Location lastLocation = locationEngine.getLastLocation();
-        if (lastLocation != null){
-            setCameraPosition(lastLocation);
+        oldLocation = locationEngine.getLastLocation();
+        if (oldLocation != null){
+            setCameraPosition(oldLocation);
         } else {
             locationEngine.addLocationEngineListener(this);
         }
@@ -230,7 +231,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
                 {
                     c.setCollected(true);
                     activity.getCollectedIDs().add(c.getId());
-                    Log.d(tag, "Collected coin" + c.getId());
+                    Log.d(tag, "Collected coin: " + c.getId());
 
                     if (activity.getMarkers().containsKey(c.getId())) { map.removeMarker(activity.getMarkers().get(c.getId())); }
 
@@ -271,6 +272,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
                 }
             }
         }
+        Log.d(tag, "Coins ready");
         activity.setCoinsReady(true);
     }
 
@@ -281,6 +283,10 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
         } catch(InterruptedException e) {
         }
         activity.finish();
+    }
+
+    public void displayPermissionError(){
+        Snackbar.make(getView(), R.string.map_perm_explain, Snackbar.LENGTH_LONG).show();
     }
 
     @Override

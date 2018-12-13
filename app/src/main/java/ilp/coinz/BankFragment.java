@@ -1,6 +1,8 @@
 package ilp.coinz;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
@@ -154,6 +156,7 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
         int width = LinearLayout.LayoutParams.WRAP_CONTENT;
         int height = LinearLayout.LayoutParams.WRAP_CONTENT;
         final PopupWindow popupWindow = new PopupWindow(popupView, width, height, true);
+
 
         TextView curr1 = popupView.findViewById(R.id.textCurrency1);
         curr1.setText("SHIL: " + activity.getExchangeRates().get("SHIL"));

@@ -3,6 +3,7 @@ package ilp.coinz;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
@@ -81,9 +82,6 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        //ask for android location permissions
-        requestLocation();
 
         //get user
         FirebaseAuth mAuth;
@@ -288,7 +286,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
     @Override
     public void downloadFinish(String result){
-
+        Log.d(tag, "JSON downloaded");
         this.jsonResult = result;
         downloadFBWallet();
 
@@ -351,12 +349,9 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
             for (String id : collectedIDs){
                 if(coinsCollection.containsKey(id)){ Objects.requireNonNull(coinsCollection.get(id)).setCollected(true); }
             }
-
-
         } catch (JSONException e){
             Log.d(tag, e.toString());
             mapFragment.displayJsonError();
-
         }
         mapFragment.addCoinsToMap();
         checkSpareChange();
@@ -379,7 +374,6 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
                         if (spareChangeValue > 0.0){
                             //give user option to convert
                             spawnSCPopup();
-                            Log.d(tag, "Spawning spare change popup");
                         } else if (loginReward > 0.0){
                             //if user has login reward waiting, give popup
                             spawnRewardPopup();
@@ -391,8 +385,8 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
     @SuppressLint("ClickableViewAccessibility")
     private void spawnSCPopup(){
-        LayoutInflater inflater = (LayoutInflater)
-                getSystemService(LAYOUT_INFLATER_SERVICE);
+        Log.d(tag, "Spawning spare change popup");
+        LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
         View popupView = inflater.inflate(R.layout.sparechange_popup, null);
 
         // create the popup window
@@ -434,7 +428,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
     @SuppressLint("ClickableViewAccessibility")
     private void spawnRewardPopup(){
-
+        Log.d(tag, "Spawning login reward popup");
         LayoutInflater inflater = (LayoutInflater)
                 getSystemService(LAYOUT_INFLATER_SERVICE);
         View popupView = inflater.inflate(R.layout.reward_popup, null);
@@ -479,12 +473,14 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
-        if(requestCode == REQUEST_LOCATION && permissions.length > 0){
+        if(requestCode == REQUEST_LOCATION && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
             Log.d(tag, "Callback: Permissions granted");
             locationGranted = true;
+            mapFragment.enableLocation();
         } else {
             Log.d(tag, "Callback: Permissions not granted");
-             requestLocation();
+            mapFragment.displayPermissionError();
+            requestLocation();
         }
     }
 

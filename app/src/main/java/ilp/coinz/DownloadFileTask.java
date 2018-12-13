@@ -18,7 +18,6 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
     @Override
     protected String doInBackground(String... urls){
         try{
-            Log.d(tag, "Trying to download " + urls[0]);
             return loadFileFromNetwork(urls[0]);
         } catch (IOException e){
             return e.toString();
@@ -27,7 +26,6 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
     }
 
     private String loadFileFromNetwork(String urlString) throws IOException{
-        Log.d(tag, "Trying to download " + urlString);
         return readStream(downloadUrl(new URL(urlString)));
     }
 

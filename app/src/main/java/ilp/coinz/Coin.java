@@ -43,7 +43,10 @@ public class Coin {
             Log.d("Coin", "JSON error creating coin object");
         }
     }
-
+    @Override
+    public String toString(){
+    return "" + this.currency + String.format("%.3f", this.value);
+    }
 
     public String getId() {
         return id;
