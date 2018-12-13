@@ -52,7 +52,7 @@
     <string name="bank_gold_label">Gold Balance</string>
     <string name="bank_zero">0</string>
     <string name="bank_button">Bank Coin</string>
-
+    <string name="bank_rates">Rates</string>
     //Transfer
     <string name="transfer_email_prompt">Enter an email to send spare change to:</string>
     <string name="transfer_coin_prompt">Select a coin to send:</string>
@@ -83,5 +83,8 @@
     //Daily reward
     <string name="reward_prompt">Daily login reward!</string>
     <string name="reward_button">Claim</string>
+
+    //Rates
+    <string name="rates_prompt">Today\'s Exchange Rates</string>
 
 </resources>

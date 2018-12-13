@@ -5,12 +5,15 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -22,6 +25,8 @@ import java.util.HashMap;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
+
+import static android.content.Context.LAYOUT_INFLATER_SERVICE;
 
 @SuppressWarnings("ConstantConditions")
 public class BankFragment extends Fragment implements AdapterView.OnItemSelectedListener {
@@ -63,6 +68,11 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
 
         spinner = getView().findViewById(R.id.spinner);
         spinner.setOnItemSelectedListener(this);
+
+        Button ratesButton = getView().findViewById(R.id.buttonRates);
+        ratesButton.setOnClickListener(v -> {
+            if (activity.isCoinsReady()){ spawnRatesPopup(); }
+        });
 
         Button button = getView().findViewById(R.id.bankButton);
         button.setOnClickListener(v -> {
@@ -132,6 +142,41 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
         TextView countValue = getView().findViewById(R.id.countValue);
         countValue.setText(activity.getPlayer().getBankedCount() + "/25");
     }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void spawnRatesPopup(){
+
+        LayoutInflater inflater = (LayoutInflater)
+                activity.getSystemService(LAYOUT_INFLATER_SERVICE);
+        View popupView = inflater.inflate(R.layout.rates_popup, null);
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, true);
+
+        TextView curr1 = popupView.findViewById(R.id.textCurrency1);
+        curr1.setText("SHIL: " + activity.getExchangeRates().get("SHIL"));
+        TextView curr2 = popupView.findViewById(R.id.textCurrency2);
+        curr2.setText("DOLR: " + activity.getExchangeRates().get("DOLR"));
+        TextView curr3 = popupView.findViewById(R.id.textCurrency3);
+        curr3.setText("QUID: " + activity.getExchangeRates().get("QUID"));
+        TextView curr4 = popupView.findViewById(R.id.textCurrency4);
+        curr4.setText("PENY: " + activity.getExchangeRates().get("PENY"));
+
+
+        // show the popup window
+        popupWindow.showAtLocation(popupView, Gravity.CENTER, 0, 0);
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener((v, event) -> {
+
+            popupWindow.dismiss();
+
+            return true;
+        });
+    }
+
 
     @Override
     public void onItemSelected(AdapterView<?> arg0, View arg1, int position, long id) {
