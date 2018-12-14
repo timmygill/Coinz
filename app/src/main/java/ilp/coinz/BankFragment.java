@@ -1,12 +1,11 @@
 package ilp.coinz;
 
 import android.annotation.SuppressLint;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,11 +18,9 @@ import android.widget.PopupWindow;
 import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -33,7 +30,10 @@ import static android.content.Context.LAYOUT_INFLATER_SERVICE;
 @SuppressWarnings("ConstantConditions")
 public class BankFragment extends Fragment implements AdapterView.OnItemSelectedListener {
 
+    private final String tag = "BankFragment";
+
     public MainActivity activity;
+
 
     private int selectedIndex;
     private ArrayList<Coin> spinnerItems;
@@ -83,7 +83,9 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                     activity.getPlayer().setBankedCount(activity.getPlayer().getBankedCount() + 1);
 
                     assert tempCoin != null;
+
                     Double value = activity.getPlayer().getMulti() * tempCoin.getValue() * activity.getExchangeRates().get(tempCoin.getCurrency());
+                    Log.d(tag, "Banked coin worth " + value + " gold");
                     activity.getPlayer().setGoldBalance(activity.getPlayer().getGoldBalance() + value);
                     activity.getPlayer().setLifetimeGold( activity.getPlayer().getLifetimeGold() + value);
 
@@ -119,6 +121,7 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
     }
 
     private void setSpinner(){
+        //gets all collected but unbanked coins
         for (String id : activity.getCollectedIDs()){
             if (activity.getCoinsCollection().containsKey(id)) {
                 Coin tempCoin = activity.getCoinsCollection().get(id);
@@ -128,6 +131,12 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
                 }
             }
         }
+
+        //sort coins on gold value descending
+        spinnerItems.sort((a, b) ->
+                a.getValue() * activity.getExchangeRates().get(a.getCurrency())
+                < b.getValue() * activity.getExchangeRates().get(b.getCurrency()) ? 1 : -1);
+
         ArrayAdapter<Coin> spinnerArrayAdapter = new ArrayAdapter<>(Objects.requireNonNull(getActivity()), R.layout.spinner_item, spinnerItems);
         spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 

@@ -1,6 +1,8 @@
 package ilp.coinz;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -10,6 +12,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -37,13 +41,13 @@ public class ShopFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_shop, container, false);
     }
 
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState){
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState){
         calculatePrices();
         updateText();
         setButtons();
@@ -55,8 +59,8 @@ public class ShopFragment extends Fragment {
     }
 
     public void updateText(){
-        TextView balance = getView().findViewById(R.id.shopBalance);
-        String balanceText = getString(R.string.shop_balance) + " " + String.format("%.3f", activity.getPlayer().getGoldBalance());
+        TextView balance = Objects.requireNonNull(getView()).findViewById(R.id.shopBalance);
+        @SuppressLint("DefaultLocale") String balanceText = getString(R.string.shop_balance) + " " + String.format("%.3f", activity.getPlayer().getGoldBalance());
         balance.setText(balanceText);
 
         TextView multi = getView().findViewById(R.id.shopMulti);
@@ -77,7 +81,7 @@ public class ShopFragment extends Fragment {
     }
 
     public void setButtons(){
-        Button multiButton = getView().findViewById(R.id.shopButtonMulti);
+        Button multiButton = Objects.requireNonNull(getView()).findViewById(R.id.shopButtonMulti);
         multiButton.setOnClickListener(v -> {
             if(activity.getPlayer().getMulti() < maxMulti) {
                 if (activity.getPlayer().getGoldBalance() > nextMultiCost) {

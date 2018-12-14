@@ -1,8 +1,10 @@
 package ilp.coinz;
 
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,6 +13,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -29,18 +33,19 @@ public class ProfileFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_profile, container, false);
     }
 
+    @SuppressLint({"SetTextI18n", "DefaultLocale"})
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState){
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState){
 
         //generates messages with statistics from current player instance
 
-        TextView loggedInAs = getView().findViewById(R.id.profileLIA);
+        TextView loggedInAs = Objects.requireNonNull(getView()).findViewById(R.id.profileLIA);
         String prompt = getString(R.string.profile_logged_in_as) + " " + activity.getPlayer().getEmail();
         loggedInAs.setText(prompt);
 

@@ -1,10 +1,8 @@
 package ilp.coinz;
 
 
-import android.Manifest;
 import android.arch.lifecycle.Lifecycle;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -22,8 +20,6 @@ import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineListener;
 import com.mapbox.android.core.location.LocationEnginePriority;
 import com.mapbox.android.core.location.LocationEngineProvider;
-import com.mapbox.android.core.permissions.PermissionsListener;
-import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
@@ -39,11 +35,8 @@ import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
 import com.mapbox.mapboxsdk.utils.MapFragmentUtils;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 
@@ -56,11 +49,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
 
     private MapView mapView;
     private MapboxMap map;
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private final List<OnMapReadyCallback> mapReadyCallbackList = new ArrayList<>();
     private com.mapbox.mapboxsdk.maps.MapFragment.OnMapViewReadyCallback mapViewReadyCallback;
 
     public LocationEngine locationEngine;
-    private LocationLayerPlugin locationLayerPlugin;
 
     private Location oldLocation;
 
@@ -101,12 +94,12 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
 
 
 
-        Mapbox.getInstance(getActivity(), getString(R.string.access_token));
+        Mapbox.getInstance(Objects.requireNonNull(getActivity()), getString(R.string.access_token));
 
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         Context context = inflater.getContext();
         mapView = new MapView(context, MapFragmentUtils.resolveArgs(context, getArguments()));
@@ -121,7 +114,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
     }
 
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
     }
@@ -186,7 +179,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
             if (map == null){
                 Log.d(tag, "map is null");
             }else{
-                locationLayerPlugin = new LocationLayerPlugin(mapView, map, locationEngine);
+                LocationLayerPlugin locationLayerPlugin = new LocationLayerPlugin(mapView, map, locationEngine);
                 locationLayerPlugin.setLocationLayerEnabled(true);
                 locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
                 locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
@@ -217,7 +210,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
                 activity.getPlayer().setLifetimeDistance(activity.getPlayer().getLifetimeDistance() + distanceMoved[0]);
 
                 FirebaseFirestore db = FirebaseFirestore.getInstance();
-                String email = Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser().getEmail());
+                String email = Objects.requireNonNull(Objects.requireNonNull(FirebaseAuth.getInstance().getCurrentUser()).getEmail());
                 db.collection("user").document(email).collection("Player").document(email).update("lifetimeDistance", activity.getPlayer().getLifetimeDistance());
             }
 
@@ -233,7 +226,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
                     activity.getCollectedIDs().add(c.getId());
                     Log.d(tag, "Collected coin: " + c.getId());
 
-                    if (activity.getMarkers().containsKey(c.getId())) { map.removeMarker(activity.getMarkers().get(c.getId())); }
+                    if (activity.getMarkers().containsKey(c.getId())) { map.removeMarker(Objects.requireNonNull(activity.getMarkers().get(c.getId()))); }
 
                     activity.getPlayer().setLifetimeCoins(activity.getPlayer().getLifetimeCoins() + 1);
 
@@ -257,7 +250,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
 
 
     public void addCoinsToMap() {
-        IconFactory iconFactory = IconFactory.getInstance(getContext());
+        IconFactory iconFactory = IconFactory.getInstance(Objects.requireNonNull(getContext()));
         Icon icon = iconFactory.fromResource(R.drawable.coinmarker);
         for (Coin coin : activity.getCoinsCollection().values()) {
             if (!(activity.getCollectedIDs().contains(coin.getId()))){
@@ -277,16 +270,17 @@ public class MapFragment extends Fragment implements OnMapReadyCallback, Locatio
     }
 
     public void displayJsonError(){
-        Snackbar.make(getView(),R.string.map_json_error, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(Objects.requireNonNull(getView()),R.string.map_json_error, Snackbar.LENGTH_LONG).show();
         try {
             Thread.sleep(1000);
         } catch(InterruptedException e) {
+            Log.d(tag, e.getMessage());
         }
         activity.finish();
     }
 
     public void displayPermissionError(){
-        Snackbar.make(getView(), R.string.map_perm_explain, Snackbar.LENGTH_LONG).show();
+        Snackbar.make(Objects.requireNonNull(getView()), R.string.map_perm_explain, Snackbar.LENGTH_LONG).show();
     }
 
     @Override
