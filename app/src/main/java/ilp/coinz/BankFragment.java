@@ -75,48 +75,47 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
 
         Button button = getView().findViewById(R.id.bankButton);
         button.setOnClickListener(v -> {
-            if (spinnerItems.size() > 0 && selectedIndex < spinnerItems.size()) {
-                if (activity.getPlayer().getBankedCount() < 25 && spinnerItems.get(selectedIndex) != null) {
-                    Coin tempCoin = spinnerItems.get(selectedIndex);
-                    tempCoin.setBanked(true);
+            if (!(spinnerItems.size() > 0 && selectedIndex < spinnerItems.size())) {
 
-                    activity.getPlayer().setBankedCount(activity.getPlayer().getBankedCount() + 1);
-
-                    assert tempCoin != null;
-
-                    Double value = activity.getPlayer().getMulti() * tempCoin.getValue() * activity.getExchangeRates().get(tempCoin.getCurrency());
-                    Log.d(tag, "Banked coin worth " + value + " gold");
-                    activity.getPlayer().setGoldBalance(activity.getPlayer().getGoldBalance() + value);
-                    activity.getPlayer().setLifetimeGold( activity.getPlayer().getLifetimeGold() + value);
-
-                    updateText();
-
-                    FirebaseFirestore db = FirebaseFirestore.getInstance();
-                    db.collection("user").document(activity.getPlayer().getEmail()).collection("Wallet").document(Objects.requireNonNull(tempCoin.getId())).set(Objects.requireNonNull(tempCoin));
-                    db.collection("user").document(activity.getPlayer().getEmail()).collection("Player").document(activity.getPlayer().getEmail()).set(activity.getPlayer());
-
-
-                    spinnerItems.remove(selectedIndex);
-
-                    ArrayAdapter<Coin> spinnerArrayAdapter = new ArrayAdapter<>(Objects.requireNonNull(getActivity()), R.layout.spinner_item, spinnerItems);
-                    spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-                    spinner.setAdapter(spinnerArrayAdapter);
-
-                } else {
-                    Snackbar.make(getView(), R.string.bank_all_used, Snackbar.LENGTH_LONG).show();
-
-                    Fragment fragment = new TransferFragment();
-                    activity.loadFragment(fragment, "transferFragment");
-
-                }
-            } else {
                 Snackbar.make(getView(), R.string.bank_no_coins, Snackbar.LENGTH_LONG).show();
+
+            } else if (activity.getPlayer().getBankedCount() < 25 && spinnerItems.get(selectedIndex) != null) {
+                Coin tempCoin = spinnerItems.get(selectedIndex);
+                tempCoin.setBanked(true);
+
+                activity.getPlayer().setBankedCount(activity.getPlayer().getBankedCount() + 1);
+
+                assert tempCoin != null;
+
+                Double value = activity.getPlayer().getMulti() * tempCoin.getGoldValue();
+                Log.d(tag, "Banked coin worth " + value + " gold");
+                activity.getPlayer().setGoldBalance(activity.getPlayer().getGoldBalance() + value);
+                activity.getPlayer().setLifetimeGold( activity.getPlayer().getLifetimeGold() + value);
+
+                updateText();
+
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+                db.collection("user").document(activity.getPlayer().getEmail()).collection("Wallet").document(Objects.requireNonNull(tempCoin.getId())).set(Objects.requireNonNull(tempCoin));
+                db.collection("user").document(activity.getPlayer().getEmail()).collection("Player").document(activity.getPlayer().getEmail()).set(activity.getPlayer());
+
+
+                spinnerItems.remove(selectedIndex);
+
+                ArrayAdapter<Coin> spinnerArrayAdapter = new ArrayAdapter<>(Objects.requireNonNull(getActivity()), R.layout.spinner_item, spinnerItems);
+                spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+                spinner.setAdapter(spinnerArrayAdapter);
+
+            } else {
+                Snackbar.make(getView(), R.string.bank_all_used, Snackbar.LENGTH_LONG).show();
+
+                Fragment fragment = new TransferFragment();
+                activity.loadFragment(fragment, "transferFragment");
 
             }
         });
 
-    setSpinner();
+        setSpinner();
 
     }
 
@@ -134,8 +133,7 @@ public class BankFragment extends Fragment implements AdapterView.OnItemSelected
 
         //sort coins on gold value descending
         spinnerItems.sort((a, b) ->
-                a.getValue() * activity.getExchangeRates().get(a.getCurrency())
-                < b.getValue() * activity.getExchangeRates().get(b.getCurrency()) ? 1 : -1);
+                a.getGoldValue() < b.getGoldValue()  ? 1 : -1);
 
         ArrayAdapter<Coin> spinnerArrayAdapter = new ArrayAdapter<>(Objects.requireNonNull(getActivity()), R.layout.spinner_item, spinnerItems);
         spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);

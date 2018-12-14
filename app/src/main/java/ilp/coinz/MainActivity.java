@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
     private HashMap<String, Marker> markers = new HashMap<>();
     private ArrayList<String> collectedIDs = new ArrayList<>();
     private ArrayList<String> bankedIDs = new ArrayList<>();
+    private ArrayList<String> transferredIDs = new ArrayList<>();
     private HashMap<String, Double> exchangeRates;
 
     private String jsonResult;
@@ -161,47 +162,47 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
 
 
-        private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
-                = new BottomNavigationView.OnNavigationItemSelectedListener() {
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
 
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                //navbar locked until relevant variables populated to prevent unwanted behaviour
-                if (navBarReady) {
-                    Fragment fragment;
-                    switch (item.getItemId()) {
-                        case R.id.navigation_map:
-                            loadFragment(mapFragment, "mapFragment");
-                            Log.d(tag, "Switching to map");
-                            return true;
-                        case R.id.navigation_bank:
-                            //show bank or transfer fragment, dependent on banking cap being reached
-                            if (player.getBankedCount() < 25) {
-                                fragment = new BankFragment();
-                                loadFragment(fragment, "bankFragment");
-                                Log.d(tag, "Switching to bank");
-                            } else {
-                                fragment = new TransferFragment();
-                                loadFragment(fragment, "transferFragment");
-                                Log.d(tag, "Switching to transfer");
-                            }
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            //navbar locked until relevant variables populated to prevent unwanted behaviour
+            if (navBarReady) {
+                Fragment fragment;
+                switch (item.getItemId()) {
+                    case R.id.navigation_map:
+                        loadFragment(mapFragment, "mapFragment");
+                        Log.d(tag, "Switching to map");
+                        return true;
+                    case R.id.navigation_bank:
+                        //show bank or transfer fragment, dependent on banking cap being reached
+                        if (player.getBankedCount() < 25) {
+                            fragment = new BankFragment();
+                            loadFragment(fragment, "bankFragment");
+                            Log.d(tag, "Switching to bank");
+                        } else {
+                            fragment = new TransferFragment();
+                            loadFragment(fragment, "transferFragment");
+                            Log.d(tag, "Switching to transfer");
+                        }
 
-                            return true;
-                        case R.id.navigation_shop:
-                            fragment = new ShopFragment();
-                            loadFragment(fragment, "shopFragment");
-                            Log.d(tag, "Switching to shop");
-                            return true;
-                        case R.id.navigation_profile:
-                            fragment = new ProfileFragment();
-                            loadFragment(fragment, "profileFragment");
-                            Log.d(tag, "Switching to profile");
-                            return true;
-                    }
+                        return true;
+                    case R.id.navigation_shop:
+                        fragment = new ShopFragment();
+                        loadFragment(fragment, "shopFragment");
+                        Log.d(tag, "Switching to shop");
+                        return true;
+                    case R.id.navigation_profile:
+                        fragment = new ProfileFragment();
+                        loadFragment(fragment, "profileFragment");
+                        Log.d(tag, "Switching to profile");
+                        return true;
                 }
-                return false;
             }
-        };
+            return false;
+        }
+    };
 
 
     public void loadFragment(Fragment fragment, String tag) {
@@ -302,6 +303,8 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
                             if(doc.getBoolean("banked")){
                                 //create collection of coins marked as banked
                                 bankedIDs.add(Objects.requireNonNull(doc.get("id")).toString());
+                            } else if(doc.getBoolean("transferred")) {
+                                transferredIDs.add(Objects.requireNonNull(doc.get("id")).toString());
                             }
                             //all coins present must have been collected
                             collectedIDs.add(Objects.requireNonNull(doc.get("id")).toString());
@@ -337,6 +340,7 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
             JSONArray coinsjson = coindatajson.getJSONArray("features");
             for (int i = 0; i < coinsjson.length(); i++) {
                 Coin tempCoin = new Coin(coinsjson.getJSONObject(i));
+                tempCoin.setGoldValue(tempCoin.getValue() * exchangeRates.get(tempCoin.getCurrency()));
                 coinsCollection.put(tempCoin.getId(), tempCoin);
             }
 
@@ -347,6 +351,10 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
             //set collected based on Firebase
             for (String id : collectedIDs){
                 if(coinsCollection.containsKey(id)){ Objects.requireNonNull(coinsCollection.get(id)).setCollected(true); }
+            }
+            //set transferred based on Firebase
+            for (String id : transferredIDs){
+                if(coinsCollection.containsKey(id)){ Objects.requireNonNull(coinsCollection.get(id)).setTransferred(true); }
             }
         } catch (JSONException e){
             Log.d(tag, e.toString());
@@ -365,10 +373,9 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
                     if (task.isSuccessful()) {
                         //calculate value of coins earned
                         for (QueryDocumentSnapshot doc : Objects.requireNonNull(task.getResult())) {
-                            Double value = doc.getDouble("value");
-                            String currency = doc.getString("currency");
-                            spareChangeValue += value * exchangeRates.get(currency);
-                            Log.d(tag, spareChangeValue + "");
+                            Double value = doc.getDouble("goldValue");
+                            Log.d(tag, "Adding SpareChange worth " + value);
+                            spareChangeValue += value;
                         }
                         if (spareChangeValue > 0.0){
                             //give user option to convert
@@ -486,9 +493,9 @@ public class MainActivity extends AppCompatActivity implements DownloadFileRespo
 
 
     @Override
-public void onPause(){
+    public void onPause(){
         super.onPause();
-}
+    }
 
     public boolean isLocationGranted() {
         return locationGranted;

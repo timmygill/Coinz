@@ -7,6 +7,7 @@ import android.support.design.widget.Snackbar;
 import android.support.design.widget.TextInputEditText;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,6 +26,8 @@ import javax.annotation.Nullable;
 
 
 public class TransferFragment extends Fragment implements AdapterView.OnItemSelectedListener {
+
+    private final String tag = "TransferFragment";
 
     public MainActivity activity;
 
@@ -67,39 +70,46 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
         Button button = getView().findViewById(R.id.transferButton);
         button.setOnClickListener(v -> {
             emailTo = Objects.requireNonNull(emailInput.getText()).toString();
-            if(!emailTo.equals(activity.getPlayer().getEmail())) {
 
-                if (!TextUtils.isEmpty(emailTo) && Patterns.EMAIL_ADDRESS.matcher(emailTo).matches()) {
+            if(TextUtils.isEmpty(emailTo) || !Patterns.EMAIL_ADDRESS.matcher(emailTo).matches()) {    //check email is valid
 
-                    if (activity.getPlayer().getBankedCount() >= 25 && spinnerItems.get(selectedIndex) != null) {
-                        Coin tempCoin = spinnerItems.get(selectedIndex);
-                        tempCoin.setTransferred(true);
+                Snackbar.make(getView(), R.string.transfer_invalid_email, Snackbar.LENGTH_LONG).show();
 
-                        FirebaseFirestore db = FirebaseFirestore.getInstance();
+            } else if (emailTo.equals(activity.getPlayer().getEmail())) { //check not sending to self
 
-                        //rewrite coin as collected for current user
-                        db.collection("user").document(activity.getPlayer().getEmail()).collection("Wallet").document(tempCoin.getId()).set(tempCoin);
-                        //add to receiving users spare change collection
-                        db.collection("user").document(emailTo).collection("SpareChange").document(tempCoin.getId() + "-" + activity.getPlayer().getEmail()).set(tempCoin);
-
-                        spinnerItems.remove(selectedIndex);
-
-                        ArrayAdapter<Coin> spinnerArrayAdapter = new ArrayAdapter<>(Objects.requireNonNull(getActivity()), R.layout.spinner_item, spinnerItems);
-                        spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-                        spinner.setAdapter(spinnerArrayAdapter);
-                    }
-
-                } else {
-                    Snackbar.make(getView(), R.string.transfer_invalid_email, Snackbar.LENGTH_LONG).show();
-                }
-
-                } else {
                 Snackbar.make(getView(), R.string.transfer_not_self, Snackbar.LENGTH_LONG).show();
+
+            } else if (!(spinnerItems.size() > 0 && selectedIndex < spinnerItems.size())) { //check there are still coins to transfer
+
+                Snackbar.make(getView(), R.string.transfer_no_coins, Snackbar.LENGTH_LONG).show();
+
+            } else if (activity.getPlayer().getBankedCount() >= 25 && spinnerItems.get(selectedIndex) != null) { //check coin exists and user is allowed to transfer
+                Coin tempCoin = spinnerItems.get(selectedIndex);
+
+                Log.d(tag, "Sending coin " + tempCoin.getId() + " to user " + emailTo);
+                tempCoin.setTransferred(true);
+
+                FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                //rewrite coin as collected for current user
+                db.collection("user").document(activity.getPlayer().getEmail()).collection("Wallet").document(tempCoin.getId()).set(tempCoin);
+                //add to receiving users spare change collection
+                db.collection("user").document(emailTo).collection("SpareChange").document(tempCoin.getId() + "-" + activity.getPlayer().getEmail()).set(tempCoin);
+
+                spinnerItems.remove(selectedIndex);
+
+                ArrayAdapter<Coin> spinnerArrayAdapter = new ArrayAdapter<>(Objects.requireNonNull(getActivity()), R.layout.spinner_item, spinnerItems);
+                spinnerArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+                spinner.setAdapter(spinnerArrayAdapter);
+            } else {
+
+                Snackbar.make(getView(), R.string.transfer_invalid_email, Snackbar.LENGTH_LONG).show();
+
             }
         });
 
-       setSpinner();
+        setSpinner();
 
     }
 
@@ -109,7 +119,7 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
             if (activity.getCoinsCollection().containsKey(id)) {
                 Coin tempCoin = activity.getCoinsCollection().get(id);
                 assert tempCoin != null;
-                if(!tempCoin.isBanked()) {
+                if(!tempCoin.isBanked() && !tempCoin.isTransferred()) {
                     spinnerItems.add(tempCoin);
                 }
             }

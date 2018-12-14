@@ -2,12 +2,6 @@ package ilp.coinz;
 
 import android.util.Log;
 
-import com.mapbox.mapboxsdk.annotations.BaseMarkerOptions;
-import com.mapbox.mapboxsdk.annotations.Marker;
-import com.mapbox.mapboxsdk.annotations.MarkerOptions;
-import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.maps.MapboxMap;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -17,6 +11,7 @@ public class Coin {
 
     private String id;
     private Double value;
+    private Double goldValue;
     private String currency;
     private String symbol;
     private Double longitude;
@@ -56,6 +51,10 @@ public class Coin {
         return value;
     }
 
+    public Double getGoldValue() {
+        return goldValue;
+    }
+
     public String  getCurrency() {
         return currency;
     }
@@ -72,6 +71,7 @@ public class Coin {
         return latitude;
     }
 
+
     public boolean isCollected() {
         return collected;
     }
@@ -82,6 +82,10 @@ public class Coin {
 
     public boolean isTransferred() {
         return transferred;
+    }
+
+    public void setGoldValue(Double goldValue){
+        this.goldValue = goldValue;
     }
 
     public void setTransferred(boolean transferred) {
