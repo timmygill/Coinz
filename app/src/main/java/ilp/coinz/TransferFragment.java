@@ -80,7 +80,7 @@ public class TransferFragment extends Fragment implements AdapterView.OnItemSele
                         //rewrite coin as collected for current user
                         db.collection("user").document(activity.getPlayer().getEmail()).collection("Wallet").document(tempCoin.getId()).set(tempCoin);
                         //add to receiving users spare change collection
-                        db.collection("user").document(emailTo).collection("SpareChange").document(tempCoin.getId()).set(tempCoin);
+                        db.collection("user").document(emailTo).collection("SpareChange").document(tempCoin.getId() + "-" + activity.getPlayer().getEmail()).set(tempCoin);
 
                         spinnerItems.remove(selectedIndex);
 
